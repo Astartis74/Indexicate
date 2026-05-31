@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Request Full GEO Audit — Indexicate</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+:root {
+  --bg:#050810; --surface:#0c1018; --border:#1a2030; --border2:#242d3d;
+  --accent:#00e5ff; --accent2:#7b61ff; --green:#00c97a; --red:#ff4560;
+  --text:#e8ecf4; --text-dim:#5a6480; --text-mid:#8a93ac;
+  --display:'Syne',sans-serif; --mono:'DM Mono',monospace; --body:'DM Sans',sans-serif;
+}
+body {
+  background:var(--bg); color:var(--text); font-family:var(--body);
+  min-height:100vh; overflow-x:hidden; line-height:1.6;
+}
+body::before {
+  content:''; position:fixed; inset:0;
+  background-image:
+    linear-gradient(rgba(0,229,255,0.025) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(0,229,255,0.025) 1px,transparent 1px);
+  background-size:44px 44px; pointer-events:none; z-index:0;
+}
+.glow { position:fixed; border-radius:50%; filter:blur(120px); pointer-events:none; z-index:0; }
+.g1 { width:500px; height:500px; background:rgba(0,229,255,0.04); top:-150px; left:-150px; }
+.g2 { width:400px; height:400px; background:rgba(123,97,255,0.05); bottom:-80px; right:-80px; }
+
+nav {
+  position:sticky; top:0; z-index:50;
+  backdrop-filter:blur(20px); background:rgba(5,8,16,0.85);
+  border-bottom:1px solid var(--border);
+}
+.nav-inner {
+  max-width:860px; margin:0 auto; padding:0 20px;
+  height:58px; display:flex; align-items:center; justify-content:space-between;
+}
+.logo {
+  font-family:var(--display); font-size:16px; font-weight:800;
+  color:var(--text); text-decoration:none; display:flex; align-items:center; gap:8px;
+}
+.logo-dot { width:8px; height:8px; border-radius:50%; background:var(--accent); animation:blink 1.7s infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+.back-link { font-family:var(--mono); font-size:11px; color:var(--text-dim); text-decoration:none; letter-spacing:0.08em; transition:color .2s; }
+.back-link:hover { color:var(--accent); }
+
+.page { padding:60px 0 80px; }
+.container { max-width:860px; margin:0 auto; padding:0 20px; position:relative; z-index:1; }
+
+/* HERO */
+.hero { text-align:center; margin-bottom:48px; }
+.badge {
+  display:inline-flex; align-items:center; gap:8px;
+  background:rgba(0,229,255,0.06); border:1px solid rgba(0,229,255,0.15);
+  color:var(--accent); font-family:var(--mono); font-size:11px;
+  letter-spacing:0.12em; padding:6px 14px; border-radius:999px; margin-bottom:20px;
+}
+.badge-dot { width:5px; height:5px; border-radius:50%; background:var(--accent); animation:blink 1.5s infinite; }
+h1 {
+  font-family:var(--display); font-size:clamp(28px,5vw,48px);
+  font-weight:800; line-height:1.05; letter-spacing:-0.02em; margin-bottom:14px;
+}
+h1 span {
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+}
+.hero-sub { color:var(--text-mid); font-size:16px; max-width:520px; margin:0 auto; }
+
+/* LAYOUT */
+.layout { display:grid; grid-template-columns:1fr 1.6fr; gap:24px; align-items:start; }
+@media (max-width:720px) { .layout { grid-template-columns:1fr; } }
+
+/* PACKAGES */
+.packages { display:flex; flex-direction:column; gap:14px; }
+
+.pkg {
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:16px; padding:20px; cursor:pointer;
+  transition:border-color .2s, box-shadow .2s; position:relative;
+}
+.pkg:hover { border-color:rgba(0,229,255,0.3); }
+.pkg.selected {
+  border-color:var(--accent);
+  box-shadow:0 0 0 1px var(--accent), 0 8px 24px rgba(0,229,255,0.08);
+}
+.pkg-check {
+  position:absolute; top:16px; right:16px;
+  width:20px; height:20px; border-radius:50%;
+  border:2px solid var(--border2); background:transparent;
+  transition:all .2s; display:flex; align-items:center; justify-content:center;
+}
+.pkg.selected .pkg-check {
+  background:var(--accent); border-color:var(--accent);
+}
+.pkg.selected .pkg-check::after {
+  content:'✓'; font-size:11px; color:#050810; font-weight:800;
+}
+.pkg-badge {
+  font-family:var(--mono); font-size:10px; letter-spacing:0.1em;
+  color:var(--accent); text-transform:uppercase; margin-bottom:6px;
+}
+.pkg-name {
+  font-family:var(--display); font-size:16px; font-weight:800; margin-bottom:4px;
+}
+.pkg-price {
+  font-family:var(--display); font-size:24px; font-weight:800;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+  margin-bottom:10px;
+}
+.pkg-features { list-style:none; display:flex; flex-direction:column; gap:5px; }
+.pkg-features li {
+  font-size:12px; color:var(--text-mid); display:flex; align-items:flex-start; gap:7px;
+}
+.pkg-features li::before { content:'→'; color:var(--accent); opacity:0.6; flex-shrink:0; margin-top:1px; }
+.pkg-popular {
+  position:absolute; top:-1px; left:50%; transform:translateX(-50%);
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  color:#050810; font-family:var(--mono); font-size:10px; font-weight:700;
+  letter-spacing:0.1em; padding:3px 14px; border-radius:0 0 8px 8px;
+}
+
+/* FORM */
+.form-card {
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:20px; padding:28px; position:relative; overflow:hidden;
+}
+.form-card::before {
+  content:''; position:absolute; top:0; left:0; right:0; height:1px;
+  background:linear-gradient(90deg,transparent,var(--accent),transparent); opacity:0.3;
+}
+.field { margin-bottom:16px; }
+label {
+  display:block; font-family:var(--mono); font-size:11px;
+  letter-spacing:0.08em; color:var(--text-dim); text-transform:uppercase; margin-bottom:8px;
+}
+input, textarea, select {
+  width:100%; background:#070b12; border:1px solid var(--border2);
+  color:var(--text); border-radius:12px; padding:13px 14px;
+  font-family:var(--body); font-size:14px; outline:none;
+  transition:border-color .2s, box-shadow .2s; resize:vertical;
+}
+input::placeholder, textarea::placeholder { color:var(--text-dim); }
+input:focus, textarea:focus, select:focus {
+  border-color:rgba(0,229,255,0.6); box-shadow:0 0 0 3px rgba(0,229,255,0.07);
+}
+select { appearance:none; cursor:pointer; }
+select option { background:#0c1018; }
+
+.submit-btn {
+  width:100%; background:linear-gradient(135deg,var(--accent),var(--accent2));
+  color:#050810; border:none; cursor:pointer;
+  font-family:var(--display); font-size:16px; font-weight:800;
+  border-radius:12px; padding:16px;
+  transition:opacity .2s, transform .15s;
+  margin-top:4px;
+}
+.submit-btn:hover { opacity:0.9; transform:translateY(-1px); }
+.submit-btn:disabled { opacity:0.4; cursor:not-allowed; transform:none; }
+
+.form-note { font-size:12px; color:var(--text-dim); margin-top:12px; line-height:1.5; text-align:center; }
+
+/* SUCCESS */
+.success-box {
+  display:none; text-align:center; padding:40px 20px;
+}
+.success-box.show { display:block; }
+.success-icon {
+  width:64px; height:64px; border-radius:50%;
+  background:rgba(0,201,122,0.12); border:1px solid rgba(0,201,122,0.2);
+  display:flex; align-items:center; justify-content:center;
+  font-size:28px; margin:0 auto 20px;
+}
+.success-title {
+  font-family:var(--display); font-size:24px; font-weight:800; margin-bottom:10px;
+}
+.success-text { color:var(--text-mid); font-size:15px; margin-bottom:24px; line-height:1.6; }
+.back-btn {
+  display:inline-flex; align-items:center; gap:8px;
+  background:rgba(0,229,255,0.08); border:1px solid rgba(0,229,255,0.2);
+  color:var(--accent); font-family:var(--display); font-size:14px; font-weight:700;
+  padding:12px 24px; border-radius:10px; text-decoration:none;
+  transition:all .2s;
+}
+.back-btn:hover { background:rgba(0,229,255,0.14); }
+
+/* TRUST */
+.trust-row {
+  display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-top:24px;
+}
+@media (max-width:720px) { .trust-row { grid-template-columns:1fr; } }
+.trust-item {
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:12px; padding:16px; text-align:center;
+}
+.trust-num {
+  font-family:var(--display); font-size:24px; font-weight:800;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+  margin-bottom:4px;
+}
+.trust-label { font-size:12px; color:var(--text-mid); }
+
+footer {
+  text-align:center; padding:32px 20px;
+  font-family:var(--mono); font-size:11px; color:var(--text-dim); letter-spacing:0.05em;
+}
+</style>
+</head>
+<body>
+
+<div class="glow g1"></div>
+<div class="glow g2"></div>
+
+<nav>
+  <div class="nav-inner">
+    <a href="indexicate-landing.html" class="logo"><span class="logo-dot"></span>Indexicate</a>
+    <a href="geo-checker-v2.html" class="back-link">← Back to checker</a>
+  </div>
+</nav>
+
+<main class="page">
+  <div class="container">
+
+    <div class="hero">
+      <div class="badge"><span class="badge-dot"></span>FULL GEO AUDIT</div>
+      <h1>Get your site <span>AI-ready.</span></h1>
+      <p class="hero-sub">A full manual audit with Schema fixes, content gap analysis, and a step-by-step action plan.</p>
+    </div>
+
+    <div class="layout">
+
+      <!-- PACKAGES -->
+      <div class="packages">
+
+        <div class="pkg" id="pkg1" onclick="selectPkg(1)">
+          <div class="pkg-check" id="check1"></div>
+          <div class="pkg-badge">Starter</div>
+          <div class="pkg-name">Single Site Audit</div>
+          <div class="pkg-price">$149</div>
+          <ul class="pkg-features">
+            <li>Full GEO visibility report</li>
+            <li>Schema markup audit + JSON-LD code</li>
+            <li>3 AI query visibility tests</li>
+            <li>Priority action plan (P1/P2/P3)</li>
+            <li>Delivered in 5 business days</li>
+          </ul>
+        </div>
+
+        <div class="pkg selected" id="pkg2" onclick="selectPkg(2)">
+          <div class="pkg-popular">MOST POPULAR</div>
+          <div class="pkg-check" id="check2"></div>
+          <div class="pkg-badge">Growth</div>
+          <div class="pkg-name">Multi-site Package</div>
+          <div class="pkg-price">$349</div>
+          <ul class="pkg-features">
+            <li>Audit for up to 3 sites</li>
+            <li>Cross-site entity & brand analysis</li>
+            <li>Full Schema implementation per site</li>
+            <li>Content gap + topic cluster recommendations</li>
+            <li>Consolidated action plan</li>
+            <li>Delivered in 7 business days</li>
+          </ul>
+        </div>
+
+        <div class="pkg" id="pkg3" onclick="selectPkg(3)">
+          <div class="pkg-check" id="check3"></div>
+          <div class="pkg-badge">Custom</div>
+          <div class="pkg-name">Custom Engagement</div>
+          <div class="pkg-price">Let's talk</div>
+          <ul class="pkg-features">
+            <li>Ongoing GEO monitoring</li>
+            <li>Content strategy for AI visibility</li>
+            <li>Implementation support</li>
+            <li>Custom scope & pricing</li>
+          </ul>
+        </div>
+
+        <div class="trust-row">
+          <div class="trust-item">
+            <div class="trust-num">48h</div>
+            <div class="trust-label">Response time</div>
+          </div>
+          <div class="trust-item">
+            <div class="trust-num">PDF</div>
+            <div class="trust-label">Delivered report</div>
+          </div>
+          <div class="trust-item">
+            <div class="trust-num">100%</div>
+            <div class="trust-label">Manual review</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- FORM -->
+      <div class="form-card">
+        <div id="formWrap">
+          <div class="field">
+            <label>Your name *</label>
+            <input type="text" id="fname" placeholder="Jane Smith" required>
+          </div>
+          <div class="field">
+            <label>Email address *</label>
+            <input type="email" id="femail" placeholder="jane@company.com" required>
+          </div>
+          <div class="field">
+            <label>Website URL(s) *</label>
+            <input type="text" id="furl" placeholder="https://yoursite.com">
+          </div>
+          <div class="field">
+            <label>Package selected</label>
+            <select id="fpkg">
+              <option value="single">Single Site Audit — $149</option>
+              <option value="multi" selected>Multi-site Package — $349</option>
+              <option value="custom">Custom Engagement — Let's talk</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>What's your main challenge?</label>
+            <textarea id="fmsg" rows="3" placeholder="e.g. We're not showing up in ChatGPT when users search for our product category..."></textarea>
+          </div>
+
+          <button class="submit-btn" id="submitBtn" onclick="submitForm()">
+            Send Audit Request →
+          </button>
+          <p class="form-note">We'll reply within 48 hours with a proposal and next steps.</p>
+        </div>
+
+        <div class="success-box" id="successBox">
+          <div class="success-icon">✓</div>
+          <div class="success-title">Request received!</div>
+          <div class="success-text">
+            Thank you. We'll review your site and reply within 48 hours with a proposal and timeline.
+          </div>
+          <a href="indexicate-landing.html" class="back-btn">← Back to home</a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</main>
+
+<footer>Indexicate · GEO & AI Visibility Audits · hello@indexicate.com</footer>
+
+<script>
+const pkgMap = { 1:'single', 2:'multi', 3:'custom' };
+
+function selectPkg(n) {
+  [1,2,3].forEach(i => {
+    document.getElementById('pkg'+i).classList.remove('selected');
+  });
+  document.getElementById('pkg'+n).classList.add('selected');
+  document.getElementById('fpkg').value = pkgMap[n];
+}
+
+function submitForm() {
+  const name  = document.getElementById('fname').value.trim();
+  const email = document.getElementById('femail').value.trim();
+  const url   = document.getElementById('furl').value.trim();
+  const pkg   = document.getElementById('fpkg').value;
+  const msg   = document.getElementById('fmsg').value.trim();
+  const btn   = document.getElementById('submitBtn');
+
+  if (!name)  { alert('Please enter your name.'); return; }
+  if (!email || !email.includes('@')) { alert('Please enter a valid email.'); return; }
+  if (!url)   { alert('Please enter your website URL.'); return; }
+
+  btn.disabled = true;
+  btn.textContent = 'Sending…';
+
+  const pkgLabel = { single:'Single Site Audit ($149)', multi:'Multi-site Package ($349)', custom:'Custom Engagement' }[pkg];
+  const subject  = encodeURIComponent('Full GEO Audit Request — ' + pkgLabel);
+  const body     = encodeURIComponent(
+    'Name: ' + name + '\n' +
+    'Email: ' + email + '\n' +
+    'Website: ' + url + '\n' +
+    'Package: ' + pkgLabel + '\n\n' +
+    'Message:\n' + (msg || 'No additional message.')
+  );
+
+  // Open mailto
+  window.location.href = 'mailto:hello@indexicate.com?subject=' + subject + '&body=' + body;
+
+  // Show success after short delay
+  setTimeout(() => {
+    document.getElementById('formWrap').style.display = 'none';
+    document.getElementById('successBox').classList.add('show');
+  }, 1200);
+}
+</script>
+</body>
+</html>

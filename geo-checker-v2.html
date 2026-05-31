@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Indexicate GEO Checker — Free AI Visibility Audit</title>
+<meta name="description" content="Check if your site is ready for AI search. Get a free GEO visibility score in 60 seconds.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg:#050810; --surface:#0c1018; --border:#1a2030; --border2:#242d3d;
+  --accent:#00e5ff; --accent2:#7b61ff; --green:#00c97a; --red:#ff4560; --yellow:#ffa726;
+  --text:#e8ecf4; --text-dim:#5a6480; --text-mid:#8a93ac;
+  --display:'Syne',sans-serif; --mono:'DM Mono',monospace; --body:'DM Sans',sans-serif;
+}
+html { scroll-behavior:smooth; }
+body {
+  background:var(--bg); color:var(--text); font-family:var(--body); overflow-x:hidden; line-height:1.6; min-height:100vh;
+}
+body::before{
+  content:''; position:fixed; inset:0;
+  background-image:linear-gradient(rgba(0,229,255,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(0,229,255,0.025) 1px,transparent 1px);
+  background-size:44px 44px; pointer-events:none; z-index:0;
+}
+.container{ max-width:840px; margin:0 auto; padding:0 20px; position:relative; z-index:1; }
+.glow-orb{ position:fixed; border-radius:50%; filter:blur(120px); pointer-events:none; z-index:0; }
+.glow-1{ width:520px; height:520px; background:rgba(0,229,255,0.045); top:-180px; left:-180px; }
+.glow-2{ width:420px; height:420px; background:rgba(123,97,255,0.05); bottom:-80px; right:-80px; }
+nav{
+  position:sticky; top:0; z-index:50; backdrop-filter:blur(20px); background:rgba(5,8,16,0.82); border-bottom:1px solid var(--border);
+}
+.nav-inner{ height:58px; display:flex; align-items:center; justify-content:space-between; }
+.logo{
+  font-family:var(--display); font-size:16px; font-weight:800; color:var(--text); text-decoration:none; display:flex; align-items:center; gap:8px;
+}
+.logo-dot{ width:8px; height:8px; border-radius:50%; background:var(--accent); animation:blink 1.7s infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+.back-link{ font-family:var(--mono); font-size:11px; color:var(--text-dim); text-decoration:none; letter-spacing:0.08em; }
+.back-link:hover{ color:var(--accent); }
+.page{ padding:56px 0 72px; }
+.header{ text-align:center; margin-bottom:28px; }
+.badge{
+  display:inline-flex; align-items:center; gap:8px; background:rgba(0,229,255,0.06); border:1px solid rgba(0,229,255,0.15);
+  color:var(--accent); font-family:var(--mono); font-size:11px; letter-spacing:0.12em; padding:6px 14px; border-radius:999px; margin-bottom:18px;
+}
+.badge-dot{ width:5px; height:5px; border-radius:50%; background:var(--accent); }
+h1{ font-family:var(--display); font-size:clamp(32px,5vw,52px); line-height:1.03; letter-spacing:-0.03em; margin-bottom:14px; }
+.subhead{ max-width:620px; margin:0 auto; color:var(--text-mid); font-size:16px; }
+.panel{
+  margin-top:30px; background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:24px; box-shadow:0 14px 40px rgba(0,0,0,0.25);
+}
+.form-grid{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+@media (max-width:760px){ .form-grid{ grid-template-columns:1fr; } }
+.field{ display:flex; flex-direction:column; gap:8px; }
+label{
+  font-family:var(--mono); font-size:11px; letter-spacing:0.08em; color:var(--text-dim); text-transform:uppercase;
+}
+input{
+  width:100%; background:#070b12; border:1px solid var(--border2); color:var(--text); border-radius:12px; padding:14px; font-family:var(--body); font-size:15px; outline:none; transition:border-color .2s, box-shadow .2s;
+}
+input::placeholder{ color:var(--text-dim); }
+input:focus{ border-color:rgba(0,229,255,0.7); box-shadow:0 0 0 3px rgba(0,229,255,0.08); }
+.full{ margin-top:14px; }
+.btn-row{ display:flex; gap:12px; margin-top:16px; flex-wrap:wrap; }
+.btn-run{
+  background:linear-gradient(135deg,var(--accent),var(--accent2)); color:#050810; border:none; cursor:pointer;
+  font-family:var(--display); font-size:15px; font-weight:800; border-radius:12px; padding:14px 28px;
+  display:inline-flex; align-items:center; gap:8px; transition:transform .2s, opacity .2s;
+}
+.btn-run:hover:not(:disabled){ transform:translateY(-1px); }
+.btn-run:disabled{ opacity:0.5; cursor:not-allowed; }
+.btn-audit{
+  background:transparent; border:1px solid var(--border2); color:var(--text-mid); cursor:pointer;
+  font-family:var(--display); font-size:14px; font-weight:700; border-radius:12px; padding:14px 20px;
+  text-decoration:none; display:inline-flex; align-items:center; transition:border-color .2s, color .2s;
+}
+.btn-audit:hover{ border-color:var(--accent); color:var(--accent); }
+.help{ margin-top:12px; font-size:12px; color:var(--text-dim); line-height:1.5; }
+.results{ display:none; margin-top:24px; }
+.results.show{ display:block; }
+.score-wrap{ display:grid; grid-template-columns:180px 1fr; gap:18px; align-items:start; }
+@media (max-width:680px){
+  .score-wrap{ grid-template-columns:1fr; }
+  .form-grid{ grid-template-columns:1fr !important; }
+  .metrics{ grid-template-columns:1fr !important; }
+  .btn-row{ flex-direction:column; }
+  .btn-run, .btn-audit{ width:100%; justify-content:center; }
+  .cta-row{ flex-direction:column; }
+  .btn-cta{ width:100%; justify-content:center; text-align:center; }
+  .issue{ font-size:12px; word-break:break-word; overflow-wrap:break-word; }
+  .panel{ padding:16px; }
+  h1{ font-size:28px; }
+  .summary{ padding:14px; }
+  .nav-inner{ height:52px; }
+  .page{ padding-top:40px; }
+}
+.score-circle{
+  width:180px; aspect-ratio:1/1; border-radius:50%; display:grid; place-items:center;
+  background:radial-gradient(circle at center, rgba(0,229,255,0.10), rgba(123,97,255,0.08));
+  border:1px solid rgba(0,229,255,0.14); position:relative; margin:0 auto;
+}
+.score-circle::after{
+  content:''; position:absolute; inset:12px; border-radius:50%; border:1px dashed rgba(138,147,172,0.28);
+}
+.score-inner{ text-align:center; position:relative; z-index:1; }
+.score-num{ font-family:var(--display); font-size:44px; font-weight:800; line-height:1; }
+.score-lbl{ margin-top:6px; font-family:var(--mono); font-size:10px; letter-spacing:0.12em; color:var(--text-dim); text-transform:uppercase; }
+.grade-txt{ margin-top:4px; font-size:13px; color:var(--text-mid); }
+.summary{ padding:18px; background:#070b12; border:1px solid var(--border2); border-radius:14px; }
+.summary-title{ font-family:var(--display); font-size:20px; font-weight:800; margin-bottom:6px; }
+.summary-text{ color:var(--text-mid); font-size:14px; line-height:1.6; }
+.metrics{ margin-top:16px; display:grid; grid-template-columns:repeat(2,1fr); gap:10px; }
+@media (max-width:500px){ .metrics{ grid-template-columns:1fr; } }
+.metric{ background:#0a0f1a; border:1px solid var(--border2); border-radius:12px; padding:14px; }
+.metric-top{ display:flex; justify-content:space-between; gap:8px; margin-bottom:8px; }
+.metric-name{ font-family:var(--mono); font-size:10px; letter-spacing:0.08em; color:var(--text-dim); text-transform:uppercase; }
+.metric-val{ font-family:var(--display); font-size:14px; font-weight:800; }
+.bar{ height:6px; background:#111726; border-radius:999px; overflow:hidden; }
+.bar-fill{ height:100%; border-radius:999px; background:linear-gradient(90deg,var(--accent),var(--accent2)); transition:width 0.8s ease; }
+.issues-wrap{ margin-top:14px; }
+.issues-label{ font-family:var(--mono); font-size:10px; letter-spacing:0.1em; color:var(--text-dim); text-transform:uppercase; margin-bottom:8px; }
+.issue{
+  display:flex; gap:10px; align-items:flex-start; padding:10px 12px; background:#0a0f1a;
+  border:1px solid var(--border2); border-radius:10px; font-size:13px; color:var(--text-mid); margin-bottom:8px;
+}
+.sev{
+  font-family:var(--mono); font-size:10px; letter-spacing:0.06em; padding:3px 8px; border-radius:999px; flex-shrink:0; margin-top:1px;
+}
+.sev-high{ background:rgba(255,69,96,0.12); color:#ff8ea0; border:1px solid rgba(255,69,96,0.2); }
+.sev-med{ background:rgba(255,167,38,0.12); color:#ffcc8b; border:1px solid rgba(255,167,38,0.2); }
+.sev-low{ background:rgba(0,201,122,0.12); color:#8ef0c4; border:1px solid rgba(0,201,122,0.2); }
+.cta-box{
+  margin-top:16px; padding:20px; border-radius:14px;
+  background:linear-gradient(135deg,rgba(0,229,255,0.05),rgba(123,97,255,0.05));
+  border:1px solid rgba(0,229,255,0.12);
+}
+.cta-title{ font-family:var(--display); font-size:17px; font-weight:800; margin-bottom:6px; }
+.cta-text{ color:var(--text-mid); font-size:13px; margin-bottom:14px; line-height:1.5; }
+.cta-row{ display:flex; gap:10px; flex-wrap:wrap; }
+.btn-cta{
+  background:linear-gradient(135deg,var(--accent),var(--accent2)); color:#050810; border:none; cursor:pointer;
+  font-family:var(--display); font-size:14px; font-weight:800; border-radius:10px; padding:12px 22px;
+  text-decoration:none; display:inline-flex; align-items:center; transition:opacity .2s;
+}
+.btn-cta:hover{ opacity:0.88; }
+.small-note{ margin-top:14px; font-size:12px; color:var(--text-dim); line-height:1.5; }
+.footer{ margin-top:32px; text-align:center; font-family:var(--mono); font-size:11px; color:var(--text-dim); letter-spacing:0.05em; }
+</style>
+</head>
+<body>
+<div class="glow-orb glow-1"></div>
+<div class="glow-orb glow-2"></div>
+
+<nav>
+  <div class="container nav-inner">
+    <a href="indexicate-landing.html" class="logo"><span class="logo-dot"></span>Indexicate</a>
+    <a href="indexicate-landing.html" class="back-link">← Back to home</a>
+  </div>
+</nav>
+
+<main class="page">
+  <div class="container">
+    <div class="header">
+      <div class="badge"><span class="badge-dot"></span> FREE GEO CHECKER</div>
+      <h1>See how AI reads<br>your website.</h1>
+      <p class="subhead">Paste your public URL and get a fast GEO visibility score based on crawlability, structure, schema, and answer readiness.</p>
+    </div>
+
+    <section class="panel">
+      <div class="form-grid">
+        <div class="field">
+          <label for="url">Website URL</label>
+          <input id="url" type="url" placeholder="https://yourdomain.com">
+        </div>
+        <div class="field">
+          <label for="brand">Brand name</label>
+          <input id="brand" type="text" placeholder="Your brand name">
+        </div>
+      </div>
+
+      <div class="form-grid full">
+        <div class="field">
+          <label for="keyword1">Main keyword / query 1</label>
+          <input id="keyword1" type="text" placeholder="e.g. best ADHD planner">
+        </div>
+        <div class="field">
+          <label for="keyword2">Main keyword / query 2</label>
+          <input id="keyword2" type="text" placeholder="e.g. productivity workbook">
+        </div>
+      </div>
+
+      <div class="field full">
+        <label for="keyword3">Main keyword / query 3</label>
+        <input id="keyword3" type="text" placeholder="e.g. task paralysis tool">
+      </div>
+
+      <div class="btn-row">
+        <button class="btn-run" id="runBtn" onclick="runCheck()">Run Free Check →</button>
+        <a class="btn-audit" href="audit-request.html">Request full audit</a>
+      </div>
+
+      <div class="help">This free checker uses public signals only. No login required. No private data stored.</div>
+
+      <div id="results" class="results">
+        <div class="score-wrap">
+          <div class="score-circle">
+            <div class="score-inner">
+              <div id="scoreNum" class="score-num">—</div>
+              <div class="score-lbl">GEO score</div>
+              <div id="gradeTxt" class="grade-txt">Grade: —</div>
+            </div>
+          </div>
+
+          <div class="summary">
+            <div id="summaryTitle" class="summary-title">Your visibility snapshot</div>
+            <div id="summaryText" class="summary-text">Running analysis…</div>
+
+            <div class="metrics">
+              <div class="metric">
+                <div class="metric-top"><div class="metric-name">Crawlability</div><div id="m1v" class="metric-val">—</div></div>
+                <div class="bar"><div class="bar-fill" id="m1b" style="width:0%"></div></div>
+              </div>
+              <div class="metric">
+                <div class="metric-top"><div class="metric-name">Schema</div><div id="m2v" class="metric-val">—</div></div>
+                <div class="bar"><div class="bar-fill" id="m2b" style="width:0%"></div></div>
+              </div>
+              <div class="metric">
+                <div class="metric-top"><div class="metric-name">Content clarity</div><div id="m3v" class="metric-val">—</div></div>
+                <div class="bar"><div class="bar-fill" id="m3b" style="width:0%"></div></div>
+              </div>
+              <div class="metric">
+                <div class="metric-top"><div class="metric-name">AI readiness</div><div id="m4v" class="metric-val">—</div></div>
+                <div class="bar"><div class="bar-fill" id="m4b" style="width:0%"></div></div>
+              </div>
+            </div>
+
+            <div class="issues-wrap">
+              <div class="issues-label">Top issues found</div>
+              <div id="issues"></div>
+            </div>
+
+            <div class="cta-box">
+              <div class="cta-title">Want the full GEO audit?</div>
+              <div class="cta-text">Get a manual review with content gaps, entity mapping, Schema implementation, and a prioritized action plan.</div>
+              <div class="cta-row">
+                <a href="audit-request.html" class="btn-cta">Request full audit →</a>
+              </div>
+            </div>
+
+            <div class="small-note">
+              Note: if your site uses heavy JavaScript rendering (SPAs), some signals may not be detected by this lightweight checker. That is expected behavior for a free tool.
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="footer">Indexicate · GEO & AI Visibility Audits · hello@indexicate.com</div>
+  </div>
+</main>
+
+<script>
+function cleanUrl(v) {
+  let u = v.trim();
+  if (!u) return '';
+  if (!/^https?:\/\//i.test(u)) u = 'https://' + u;
+  return u.replace(/\/+$/, '');
+}
+function getDomain(url) {
+  try { return new URL(url).hostname.replace(/^www\./, ''); }
+  catch { return url.replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/.*$/, ''); }
+}
+function getGrade(s) {
+  if (s >= 85) return 'A';
+  if (s >= 70) return 'B';
+  if (s >= 55) return 'C';
+  if (s >= 40) return 'D';
+  return 'F';
+}
+function metricLabel(s) {
+  if (s >= 75) return 'Good';
+  if (s >= 45) return 'Fair';
+  return 'Weak';
+}
+function setMetric(id, label, pct) {
+  document.getElementById(id + 'v').textContent = label;
+  setTimeout(() => { document.getElementById(id + 'b').style.width = Math.min(100, Math.max(0, pct)) + '%'; }, 100);
+}
+function scoreColor(s) {
+  if (s >= 70) return '#00c97a';
+  if (s >= 45) return '#ffa726';
+  return '#ff4560';
+}
+
+async function runCheck() {
+  const rawUrl = document.getElementById('url').value;
+  const brand  = document.getElementById('brand').value.trim();
+  const k1 = document.getElementById('keyword1').value.trim();
+  const k2 = document.getElementById('keyword2').value.trim();
+  const k3 = document.getElementById('keyword3').value.trim();
+  const btn = document.getElementById('runBtn');
+  const results = document.getElementById('results');
+
+  if (!rawUrl.trim()) { alert('Please enter a website URL.'); return; }
+
+  const url    = cleanUrl(rawUrl);
+  const domain = getDomain(url);
+
+  btn.disabled = true;
+  btn.textContent = 'Analyzing…';
+  results.classList.remove('show');
+
+  let crawl = 0, schema = 0, clarity = 0, readiness = 0;
+  let issues = [];
+
+  // — crawlability
+  try {
+    const r = await fetch(url + '/robots.txt', { mode: 'cors' });
+    if (r.ok) { crawl += 25; }
+    else { issues.push({ cls:'sev-high', sev:'HIGH', text:'robots.txt not accessible or returned an error.' }); }
+  } catch {
+    issues.push({ cls:'sev-high', sev:'HIGH', text:'robots.txt could not be reached (CORS or network issue).' });
+  }
+
+  // — homepage analysis
+  try {
+    const r = await fetch(url, { mode: 'cors' });
+    if (r.ok) {
+      const html  = await r.text();
+      const lower = html.toLowerCase();
+
+      // schema
+      if (lower.includes('application/ld+json')) { schema += 30; }
+      else { issues.push({ cls:'sev-high', sev:'HIGH', text:'No JSON-LD schema detected on homepage.' }); }
+
+      if (lower.includes('"@type"')) { schema += 10; }
+
+      // OG / meta
+      if (lower.includes('og:title') || lower.includes('property="og:title"')) { schema += 10; }
+      else { issues.push({ cls:'sev-med', sev:'MED', text:'OpenGraph meta tags appear to be missing.' }); }
+
+      // content length
+      if (html.length > 5000) { clarity += 25; }
+      else if (html.length > 2000) { clarity += 12; issues.push({ cls:'sev-med', sev:'MED', text:'Homepage content looks thin for AI answer extraction.' }); }
+      else { issues.push({ cls:'sev-high', sev:'HIGH', text:'Homepage content is very short — hard for AI to summarize.' }); }
+
+      // trust pages
+      if (/(about|services|faq|contact)/i.test(lower)) { clarity += 15; }
+      else { issues.push({ cls:'sev-med', sev:'MED', text:'No obvious About / Services / FAQ sections detected.' }); }
+
+      // ai-ready signals
+      if (/(schema\.org|structured.?data|ai|llm|faq)/i.test(lower)) { readiness += 15; }
+      else { issues.push({ cls:'sev-low', sev:'LOW', text:'No explicit AI-readiness signals found in content.' }); }
+
+      // llms.txt
+      try {
+        const lr = await fetch(url + '/llms.txt', { mode: 'cors' });
+        if (lr.ok) { readiness += 20; }
+        else { issues.push({ cls:'sev-low', sev:'LOW', text:'No llms.txt file found. Consider adding one.' }); }
+      } catch { issues.push({ cls:'sev-low', sev:'LOW', text:'llms.txt check failed (may not exist).' }); }
+
+    } else {
+      issues.push({ cls:'sev-high', sev:'HIGH', text:'Homepage returned an error response.' });
+    }
+  } catch {
+    issues.push({ cls:'sev-high', sev:'HIGH', text:'Homepage fetch blocked by CORS or unavailable.' });
+    clarity += 10; // give small benefit of doubt
+  }
+
+  if (brand) { clarity += 5; readiness += 5; }
+  if (k1 || k2 || k3) { readiness += 10; }
+
+  const total = Math.min(100, crawl + schema + clarity + readiness);
+  const grade = getGrade(total);
+  const color = scoreColor(total);
+
+  const verdict =
+    total >= 80 ? 'Strong baseline — minor fixes could improve AI citations significantly.' :
+    total >= 55 ? 'Moderate baseline — AI engines may struggle to fully understand your site.' :
+    'Weak baseline — your site needs clearer structure, schema, and AI-ready signals.';
+
+  document.getElementById('scoreNum').textContent = total;
+  document.getElementById('scoreNum').style.color = color;
+  document.getElementById('gradeTxt').textContent = 'Grade: ' + grade;
+  document.getElementById('summaryTitle').textContent = domain + ' — visibility snapshot';
+  document.getElementById('summaryText').textContent = verdict;
+
+  setMetric('m1', metricLabel(crawl),     Math.min(100, crawl * 4));
+  setMetric('m2', metricLabel(schema),    Math.min(100, schema * 2));
+  setMetric('m3', metricLabel(clarity),   Math.min(100, clarity * 2.2));
+  setMetric('m4', metricLabel(readiness), Math.min(100, readiness * 3));
+
+  const top = issues.slice(0, 5);
+  if (!top.length) top.push({ cls:'sev-low', sev:'LOW', text:'No major issues detected in this lightweight check.' });
+  document.getElementById('issues').innerHTML = top.map(i =>
+    `<div class="issue"><span class="sev ${i.cls}">${i.sev}</span><span>${i.text}</span></div>`
+  ).join('');
+
+  results.classList.add('show');
+  btn.disabled = false;
+  btn.textContent = 'Run Again →';
+  results.scrollIntoView({ behavior:'smooth', block:'start' });
+}
+</script>
+</body>
+</html>

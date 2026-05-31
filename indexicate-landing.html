@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Indexicate — Is AI ignoring your website?</title>
+<meta name="description" content="Find out if ChatGPT, Perplexity and Gemini can find your business. Free GEO visibility check in 60 seconds.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #050810;
+  --surface: #0c1018;
+  --border: #1a2030;
+  --border2: #242d3d;
+  --accent: #00e5ff;
+  --accent2: #7b61ff;
+  --green: #00c97a;
+  --red: #ff4560;
+  --yellow: #ffa726;
+  --text: #e8ecf4;
+  --text-dim: #5a6480;
+  --text-mid: #8a93ac;
+  --display: 'Syne', sans-serif;
+  --mono: 'DM Mono', monospace;
+  --body: 'DM Sans', sans-serif;
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--body);
+  overflow-x: hidden;
+  line-height: 1.6;
+}
+
+/* ── GRID BG ── */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(0,229,255,0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,229,255,0.025) 1px, transparent 1px);
+  background-size: 44px 44px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── GLOW ── */
+.glow-orb {
+  position: fixed;
+  border-radius: 50%;
+  filter: blur(120px);
+  pointer-events: none;
+  z-index: 0;
+}
+.glow-1 { width: 600px; height: 600px; background: rgba(0,229,255,0.04); top: -200px; left: -200px; }
+.glow-2 { width: 500px; height: 500px; background: rgba(123,97,255,0.05); bottom: -100px; right: -100px; }
+
+.container {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 0 24px;
+  position: relative;
+  z-index: 1;
+}
+
+/* ── NAV ── */
+nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 100;
+  backdrop-filter: blur(20px);
+  background: rgba(5,8,16,0.8);
+  border-bottom: 1px solid var(--border);
+}
+
+.nav-inner {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 0 24px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.logo {
+  font-family: var(--display);
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--text);
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.logo-dot {
+  width: 8px; height: 8px;
+  background: var(--accent);
+  border-radius: 50%;
+  animation: blink 2s infinite;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+.nav-cta {
+  background: rgba(0,229,255,0.08);
+  border: 1px solid rgba(0,229,255,0.2);
+  color: var(--accent);
+  font-family: var(--display);
+  font-size: 13px;
+  font-weight: 700;
+  padding: 8px 20px;
+  border-radius: 8px;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+.nav-cta:hover { background: rgba(0,229,255,0.14); }
+
+/* ── HERO ── */
+.hero {
+  padding: 140px 0 80px;
+  text-align: center;
+}
+
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(0,229,255,0.06);
+  border: 1px solid rgba(0,229,255,0.15);
+  color: var(--accent);
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  padding: 6px 16px;
+  border-radius: 100px;
+  margin-bottom: 32px;
+  animation: fadeUp 0.6s ease both;
+}
+
+.hero-badge-dot {
+  width: 5px; height: 5px;
+  background: var(--accent);
+  border-radius: 50%;
+  animation: blink 1.5s infinite;
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+h1 {
+  font-family: var(--display);
+  font-size: clamp(42px, 7vw, 80px);
+  font-weight: 800;
+  line-height: 1.0;
+  letter-spacing: -0.03em;
+  margin-bottom: 24px;
+  animation: fadeUp 0.6s 0.1s ease both;
+}
+
+h1 .line2 {
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.hero-sub {
+  font-size: clamp(16px, 2.5vw, 20px);
+  color: var(--text-mid);
+  max-width: 520px;
+  margin: 0 auto 48px;
+  line-height: 1.6;
+  animation: fadeUp 0.6s 0.2s ease both;
+}
+
+.hero-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  animation: fadeUp 0.6s 0.3s ease both;
+}
+
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color: #050810;
+  font-family: var(--display);
+  font-size: 16px;
+  font-weight: 800;
+  padding: 18px 40px;
+  border-radius: 12px;
+  text-decoration: none;
+  transition: all 0.2s;
+  border: none;
+  cursor: pointer;
+  letter-spacing: 0.01em;
+}
+.btn-primary:hover { opacity: 0.9; transform: translateY(-2px); box-shadow: 0 12px 40px rgba(0,229,255,0.2); }
+
+.btn-secondary {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text-dim);
+  letter-spacing: 0.08em;
+}
+
+/* ── AI LOGOS ── */
+.ai-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 56px;
+  flex-wrap: wrap;
+  animation: fadeUp 0.6s 0.4s ease both;
+}
+
+.ai-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-dim);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-right: 4px;
+}
+
+.ai-pill {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 100px;
+  padding: 5px 14px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-mid);
+  letter-spacing: 0.04em;
+}
+
+/* ── PROBLEM SECTION ── */
+.section {
+  padding: 80px 0;
+}
+
+.section-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  color: var(--accent);
+  text-transform: uppercase;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.section-label::before {
+  content: '';
+  width: 20px; height: 1px;
+  background: var(--accent);
+}
+
+h2 {
+  font-family: var(--display);
+  font-size: clamp(28px, 4vw, 44px);
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  margin-bottom: 16px;
+}
+
+.section-sub {
+  color: var(--text-mid);
+  font-size: 16px;
+  max-width: 540px;
+  line-height: 1.7;
+}
+
+/* ── STATS ROW ── */
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-top: 48px;
+}
+
+@media (max-width: 600px) { .stats-row { grid-template-columns: 1fr; } }
+
+.stat-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 28px 24px;
+  position: relative;
+  overflow: hidden;
+}
+
+.stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+  opacity: 0.4;
+}
+
+.stat-number {
+  font-family: var(--display);
+  font-size: 42px;
+  font-weight: 800;
+  line-height: 1;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 8px;
+}
+
+.stat-desc {
+  font-size: 13px;
+  color: var(--text-mid);
+  line-height: 1.5;
+}
+
+/* ── HOW IT WORKS ── */
+.steps-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  margin-top: 48px;
+}
+
+@media (max-width: 680px) { .steps-grid { grid-template-columns: 1fr; } }
+
+.step-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 28px;
+}
+
+.step-num {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--accent);
+  letter-spacing: 0.1em;
+  margin-bottom: 16px;
+  opacity: 0.7;
+}
+
+.step-title {
+  font-family: var(--display);
+  font-size: 17px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.step-desc {
+  font-size: 13px;
+  color: var(--text-mid);
+  line-height: 1.6;
+}
+
+/* ── WHAT YOU GET ── */
+.features-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-top: 48px;
+}
+
+@media (max-width: 600px) { .features-grid { grid-template-columns: 1fr; } }
+
+.feature-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 24px;
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.feature-icon {
+  width: 36px; height: 36px;
+  border-radius: 10px;
+  background: rgba(0,229,255,0.08);
+  border: 1px solid rgba(0,229,255,0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.feature-title {
+  font-family: var(--display);
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.feature-desc {
+  font-size: 12px;
+  color: var(--text-mid);
+  line-height: 1.5;
+}
+
+/* ── AUDIT CTA ── */
+.audit-section {
+  padding: 80px 0;
+}
+
+.audit-card {
+  background: linear-gradient(135deg, rgba(0,229,255,0.05), rgba(123,97,255,0.05));
+  border: 1px solid rgba(0,229,255,0.12);
+  border-radius: 24px;
+  padding: 60px 48px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.audit-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 50%;
+  transform: translateX(-50%);
+  width: 60%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  opacity: 0.5;
+}
+
+.audit-card h2 {
+  margin-bottom: 16px;
+}
+
+.audit-card p {
+  color: var(--text-mid);
+  font-size: 16px;
+  max-width: 480px;
+  margin: 0 auto 36px;
+}
+
+.price-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  margin-bottom: 32px;
+  flex-wrap: wrap;
+}
+
+.price-item {
+  text-align: center;
+}
+
+.price-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.price-value {
+  font-family: var(--display);
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.price-free {
+  color: var(--green);
+}
+
+.price-divider {
+  width: 1px;
+  height: 40px;
+  background: var(--border2);
+}
+
+.btn-email {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  border: 1px solid rgba(0,229,255,0.3);
+  color: var(--accent);
+  font-family: var(--display);
+  font-size: 14px;
+  font-weight: 700;
+  padding: 14px 32px;
+  border-radius: 10px;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+.btn-email:hover { background: rgba(0,229,255,0.08); transform: translateY(-1px); }
+
+/* ── TESTIMONIAL PLACEHOLDER ── */
+.social-proof {
+  padding: 60px 0;
+  text-align: center;
+}
+
+.proof-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-dim);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: 32px;
+}
+
+.proof-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+@media (max-width: 680px) { .proof-cards { grid-template-columns: 1fr; } }
+
+.proof-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 24px;
+  text-align: left;
+}
+
+.proof-text {
+  font-size: 13px;
+  color: var(--text-mid);
+  line-height: 1.6;
+  margin-bottom: 16px;
+  font-style: italic;
+}
+
+.proof-author {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-dim);
+  letter-spacing: 0.06em;
+}
+
+.proof-site {
+  font-size: 11px;
+  color: var(--accent);
+  opacity: 0.6;
+  margin-top: 2px;
+}
+
+/* ── FOOTER ── */
+footer {
+  border-top: 1px solid var(--border);
+  padding: 32px 0;
+  text-align: center;
+}
+
+.footer-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.footer-logo {
+  font-family: var(--display);
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--text-mid);
+  text-decoration: none;
+}
+
+.footer-copy {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-dim);
+  letter-spacing: 0.06em;
+}
+
+.footer-email {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--accent);
+  text-decoration: none;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+.footer-email:hover { opacity: 1; }
+
+/* ── QUERY DEMO ── */
+.demo-queries {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 40px;
+  justify-content: center;
+}
+
+.demo-query {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text-mid);
+  font-style: italic;
+  position: relative;
+}
+
+.demo-query .status {
+  display: inline-block;
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+.status-r { background: var(--red); }
+.status-y { background: var(--yellow); }
+.status-g { background: var(--green); }
+
+/* divider */
+.divider {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 0;
+}
+</style>
+</head>
+<body>
+
+<div class="glow-orb glow-1"></div>
+<div class="glow-orb glow-2"></div>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-inner">
+    <a href="#" class="logo">
+      <div class="logo-dot"></div>
+      Indexicate
+    </a>
+    <a href="#check" class="nav-cta">Free Check →</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="container">
+    <div class="hero-badge">
+      <div class="hero-badge-dot"></div>
+      GEO — GENERATIVE ENGINE OPTIMIZATION
+    </div>
+
+    <h1>
+      Is AI ignoring<br>
+      <span class="line2">your website?</span>
+    </h1>
+
+    <p class="hero-sub">
+      67% of searches now start with AI. If ChatGPT, Perplexity or Gemini can't find you — your customers can't either.
+    </p>
+
+    <div class="hero-actions">
+      <a href="#check" class="btn-primary">
+        Check My Site Free →
+      </a>
+      <span class="btn-secondary">No signup. No credit card. 60 seconds.</span>
+    </div>
+
+    <div class="ai-row">
+      <span class="ai-label">Tested across</span>
+      <span class="ai-pill">ChatGPT</span>
+      <span class="ai-pill">Perplexity</span>
+      <span class="ai-pill">Gemini</span>
+      <span class="ai-pill">Claude</span>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- PROBLEM -->
+<section class="section">
+  <div class="container">
+    <div class="section-label">The Problem</div>
+    <h2>Google ranked you.<br>AI forgot you exist.</h2>
+    <p class="section-sub">
+      AI search engines don't crawl the same way Google does. They rely on structured signals, entity clarity, and answer-first content. Most sites have none of these.
+    </p>
+
+    <div class="demo-queries">
+      <div class="demo-query"><span class="status status-r"></span>"best ADHD planner for low energy days"</div>
+      <div class="demo-query"><span class="status status-r"></span>"medical software for small clinics Romania"</div>
+      <div class="demo-query"><span class="status status-y"></span>"online courses professional training Romania"</div>
+      <div class="demo-query"><span class="status status-r"></span>"digitalization consulting for SMBs"</div>
+      <div class="demo-query"><span class="status status-g"></span>"ADHD free reset tool task paralysis"</div>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-number">67%</div>
+        <div class="stat-desc">of users now start their search in an AI engine instead of Google</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number">9/10</div>
+        <div class="stat-desc">small business websites are invisible to AI search — even with good Google rankings</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number">6 wks</div>
+        <div class="stat-desc">average time to see measurable improvement after GEO fixes are implemented</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- HOW IT WORKS -->
+<section class="section" id="check">
+  <div class="container">
+    <div class="section-label">How It Works</div>
+    <h2>Your GEO score<br>in 60 seconds.</h2>
+
+    <div class="steps-grid">
+      <div class="step-card">
+        <div class="step-num">01 —</div>
+        <div class="step-title">Enter your URL</div>
+        <div class="step-desc">Paste your website and the 3 most important keywords your customers use to find you.</div>
+      </div>
+      <div class="step-card">
+        <div class="step-num">02 —</div>
+        <div class="step-title">We analyze</div>
+        <div class="step-desc">Our AI tests how ChatGPT, Perplexity and Gemini respond to your queries. We check Schema, entity clarity, and content structure.</div>
+      </div>
+      <div class="step-card">
+        <div class="step-num">03 —</div>
+        <div class="step-title">Get your score</div>
+        <div class="step-desc">Receive a GEO visibility score from 0–10 with a prioritized list of fixes you can act on immediately.</div>
+      </div>
+    </div>
+
+    <div style="text-align:center; margin-top:40px;">
+      <a href="geo-checker.html" class="btn-primary">Run Free GEO Check →</a>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- WHAT YOU GET -->
+<section class="section">
+  <div class="container">
+    <div class="section-label">What You Get</div>
+    <h2>Everything AI needs<br>to recommend you.</h2>
+
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon">📊</div>
+        <div>
+          <div class="feature-title">GEO Visibility Score</div>
+          <div class="feature-desc">A clear 0–10 score showing exactly where you stand in AI search today.</div>
+        </div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🔍</div>
+        <div>
+          <div class="feature-title">Query Test Results</div>
+          <div class="feature-desc">See if you're FOUND, PARTIAL, or NOT FOUND for each of your key queries.</div>
+        </div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">⚡</div>
+        <div>
+          <div class="feature-title">Schema Audit</div>
+          <div class="feature-desc">Identify missing structured data that prevents AI from understanding your content.</div>
+        </div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🗺️</div>
+        <div>
+          <div class="feature-title">Priority Action Plan</div>
+          <div class="feature-desc">P1/P2/P3 fixes ranked by impact. Know exactly what to fix first.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- FULL AUDIT CTA -->
+<section class="audit-section">
+  <div class="container">
+    <div class="audit-card">
+      <div class="section-label" style="justify-content:center;">Full Audit Service</div>
+      <h2>Need a deeper analysis?</h2>
+      <p>The free checker gives you the snapshot. A full GEO audit covers Schema implementation, content gap analysis, entity mapping, and a complete action plan with code-ready fixes.</p>
+
+      <div class="price-row">
+        <div class="price-item">
+          <div class="price-label">Quick Check</div>
+          <div class="price-value price-free">Free</div>
+        </div>
+        <div class="price-divider"></div>
+        <div class="price-item">
+          <div class="price-label">Full Audit — 1 Site</div>
+          <div class="price-value">$149</div>
+        </div>
+        <div class="price-divider"></div>
+        <div class="price-item">
+          <div class="price-label">Multi-site Package</div>
+          <div class="price-value">$349</div>
+        </div>
+      </div>
+
+      <a href="mailto:hello@indexicate.com" class="btn-email">
+        → Request Full Audit
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- SOCIAL PROOF -->
+<section class="social-proof">
+  <div class="container">
+    <div class="proof-label">Early Results</div>
+    <div class="proof-cards">
+      <div class="proof-card">
+        <div class="proof-text">"ChatGPT wasn't mentioning us at all. After the audit and Schema fixes, we started appearing in AI recommendations within 3 weeks."</div>
+        <div class="proof-author">Founder, ADHD Planner App</div>
+        <div class="proof-site">adhdpearls.com</div>
+      </div>
+      <div class="proof-card">
+        <div class="proof-text">"We had no idea our site was invisible to AI. The audit identified 6 critical gaps we fixed in one sprint."</div>
+        <div class="proof-author">Marketing Director, SaaS Platform</div>
+        <div class="proof-site">B2B Software</div>
+      </div>
+      <div class="proof-card">
+        <div class="proof-text">"Simple, clear, actionable. Finally a report that tells us what to actually do — not just what's broken."</div>
+        <div class="proof-author">CEO, Digital Agency</div>
+        <div class="proof-site">Agency Client</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="container">
+    <div class="footer-inner">
+      <a href="#" class="footer-logo">Indexicate</a>
+      <span class="footer-copy">© 2026 · GEO & AI Visibility Audits</span>
+      <a href="mailto:hello@indexicate.com" class="footer-email">hello@indexicate.com</a>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
