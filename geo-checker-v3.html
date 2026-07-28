@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>GEO Checker — Indexicate</title>
+<style>
+  :root{
+    --ink:#14171c;
+    --ink-2:#1c2028;
+    --line:#2a2f39;
+    --text:#e9edf2;
+    --text-dim:#9aa4b2;
+    --pass:#4fd1c5;
+    --fail:#f2a541;
+    --mono: 'JetBrains Mono', 'SFMono-Regular', Consolas, monospace;
+    --sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--ink);
+    color:var(--text);
+    font-family:var(--sans);
+    min-height:100vh;
+    padding:48px 20px 80px;
+  }
+  .wrap{
+    max-width:760px;
+    margin:0 auto;
+  }
+  .eyebrow{
+    font-family:var(--mono);
+    font-size:12px;
+    letter-spacing:0.14em;
+    text-transform:uppercase;
+    color:var(--text-dim);
+    margin-bottom:10px;
+  }
+  h1{
+    font-size:clamp(28px,4vw,38px);
+    line-height:1.15;
+    margin:0 0 14px;
+    font-weight:650;
+    letter-spacing:-0.01em;
+  }
+  .lede{
+    color:var(--text-dim);
+    font-size:15px;
+    line-height:1.55;
+    max-width:56ch;
+    margin-bottom:32px;
+  }
+  form{
+    display:flex;
+    gap:10px;
+    margin-bottom:8px;
+  }
+  input[type=text]{
+    flex:1;
+    background:var(--ink-2);
+    border:1px solid var(--line);
+    color:var(--text);
+    font-family:var(--mono);
+    font-size:14px;
+    padding:14px 16px;
+    border-radius:6px;
+    outline:none;
+  }
+  input[type=text]:focus{
+    border-color:var(--pass);
+  }
+  input[type=text]::placeholder{color:var(--text-dim);}
+  button{
+    background:var(--pass);
+    color:#0a1210;
+    border:none;
+    font-family:var(--sans);
+    font-weight:650;
+    font-size:14px;
+    padding:0 22px;
+    border-radius:6px;
+    cursor:pointer;
+    transition:opacity .15s ease;
+  }
+  button:hover{opacity:0.88;}
+  button:disabled{opacity:0.5;cursor:default;}
+  .disclaimer{
+    font-family:var(--mono);
+    font-size:11.5px;
+    color:var(--text-dim);
+    line-height:1.6;
+    border-left:2px solid var(--line);
+    padding-left:12px;
+    margin:20px 0 40px;
+  }
+  .disclaimer strong{color:var(--text);}
+
+  #status{
+    font-family:var(--mono);
+    font-size:13px;
+    color:var(--text-dim);
+    min-height:20px;
+    margin-bottom:20px;
+  }
+  #status.error{color:var(--fail);}
+
+  .report{display:none;}
+  .report.visible{display:block;}
+
+  .score-row{
+    display:flex;
+    align-items:baseline;
+    gap:14px;
+    margin-bottom:6px;
+  }
+  .score{
+    font-family:var(--mono);
+    font-size:44px;
+    font-weight:700;
+    letter-spacing:-0.02em;
+  }
+  .score-label{
+    color:var(--text-dim);
+    font-size:13px;
+  }
+  .score-bar{
+    height:4px;
+    background:var(--line);
+    border-radius:2px;
+    overflow:hidden;
+    margin-bottom:36px;
+  }
+  .score-bar-fill{
+    height:100%;
+    background:var(--pass);
+    transition:width .5s ease;
+  }
+
+  .check{
+    border-top:1px solid var(--line);
+    padding:18px 0;
+    display:grid;
+    grid-template-columns:22px 1fr;
+    gap:14px;
+  }
+  .check:last-child{border-bottom:1px solid var(--line);}
+  .dot{
+    width:9px;height:9px;border-radius:50%;
+    margin-top:6px;
+  }
+  .dot.pass{background:var(--pass);}
+  .dot.fail{background:var(--fail);}
+  .check-name{
+    font-weight:600;
+    font-size:15px;
+    margin-bottom:4px;
+  }
+  .check-detail{
+    color:var(--text-dim);
+    font-size:13px;
+    line-height:1.5;
+    font-family:var(--mono);
+  }
+  .check-detail .val{color:var(--text);}
+
+  footer{
+    margin-top:48px;
+    font-size:12px;
+    color:var(--text-dim);
+    font-family:var(--mono);
+  }
+  footer a{color:var(--pass);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow">Indexicate / Free Tool</div>
+  <h1>GEO Checker</h1>
+  <p class="lede">
+    Enter a live URL. This runs a real, server-side check against the page and its
+    root files — nothing here is simulated.
+  </p>
+
+  <form id="auditForm">
+    <input type="text" id="urlInput" placeholder="yourdomain.com" autocomplete="off" />
+    <button type="submit" id="submitBtn">Check</button>
+  </form>
+
+  <div class="disclaimer">
+    <strong>What this does and doesn't do:</strong> this checks technical signals
+    (HTTPS, robots.txt, llms.txt, title/meta, H1, schema.org, Open Graph, content
+    depth) that are known inputs to AI visibility. It does <strong>not</strong>
+    query ChatGPT, Perplexity, or any AI search engine on your behalf — that
+    requires a separate, manual audit. Any tool that claims to show you live
+    "AI search rankings" from a free automated check is not being honest with you.
+  </div>
+
+  <div id="status"></div>
+
+  <div class="report" id="report">
+    <div class="score-row">
+      <div class="score" id="scoreValue">0/7</div>
+      <div class="score-label">signals present</div>
+    </div>
+    <div class="score-bar"><div class="score-bar-fill" id="scoreBar" style="width:0%"></div></div>
+    <div id="checksList"></div>
+  </div>
+
+  <footer>
+    Built by <a href="https://indexicate.com">Indexicate</a> — AI Visibility Audits (GEO / AEO).
+  </footer>
+</div>
+
+<script>
+const form = document.getElementById('auditForm');
+const input = document.getElementById('urlInput');
+const btn = document.getElementById('submitBtn');
+const status = document.getElementById('status');
+const report = document.getElementById('report');
+const checksList = document.getElementById('checksList');
+const scoreValue = document.getElementById('scoreValue');
+const scoreBar = document.getElementById('scoreBar');
+
+const LABELS = {
+  https: { name: 'HTTPS', detail: c => c.pass ? 'Site is served over HTTPS.' : 'Site is not using HTTPS.' },
+  robotsTxt: { name: 'robots.txt', detail: c => c.pass ? 'Found and reachable at /robots.txt.' : 'No robots.txt found at the root.' },
+  llmsTxt: { name: 'llms.txt', detail: c => c.pass ? 'Found at /llms.txt.' : 'No llms.txt found — most sites do not have one yet, but AI crawlers increasingly look for it.' },
+  title: { name: 'Title tag', detail: c => c.value ? `"${c.value}" (${c.length} characters)` : 'No title tag found.' },
+  metaDescription: { name: 'Meta description', detail: c => c.value ? `${c.length} characters` : 'No meta description found.' },
+  h1: { name: 'H1 heading', detail: c => c.count === 1 ? `Exactly one H1: "${c.value || ''}"` : `${c.count} H1 tags found (should be exactly 1).` },
+  schemaOrg: { name: 'Schema.org (JSON-LD)', detail: c => c.types && c.types.length ? `Found: ${c.types.join(', ')}` : 'No structured data found.' },
+  openGraph: { name: 'Open Graph tags', detail: c => {
+      const have = [c.ogTitle && 'og:title', c.ogDescription && 'og:description', c.ogImage && 'og:image'].filter(Boolean);
+      const missing = [!c.ogTitle && 'og:title', !c.ogDescription && 'og:description', !c.ogImage && 'og:image'].filter(Boolean);
+      return missing.length ? `Missing: ${missing.join(', ')}` : 'All three core tags present.';
+    } },
+  contentDepth: { name: 'Content depth', detail: c => `${c.wordCount} visible words on the page.` },
+};
+
+function escapeHtml(str){
+  return String(str).replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));
+}
+
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const url = input.value.trim();
+  if (!url) return;
+
+  btn.disabled = true;
+  status.textContent = 'Running checks — fetching page, robots.txt, llms.txt...';
+  status.classList.remove('error');
+  report.classList.remove('visible');
+
+  try {
+    const res = await fetch('/api/audit?url=' + encodeURIComponent(url));
+    const data = await res.json();
+
+    if (data.fetchError) {
+      status.textContent = data.fetchError;
+      status.classList.add('error');
+      btn.disabled = false;
+      return;
+    }
+    if (data.error) {
+      status.textContent = data.error;
+      status.classList.add('error');
+      btn.disabled = false;
+      return;
+    }
+
+    const checks = data.checks;
+    const keys = Object.keys(LABELS);
+    const passed = keys.filter(k => checks[k] && checks[k].pass).length;
+
+    scoreValue.textContent = `${passed}/${keys.length}`;
+    scoreBar.style.width = `${(passed / keys.length) * 100}%`;
+
+    checksList.innerHTML = keys.map(k => {
+      const c = checks[k];
+      const label = LABELS[k];
+      const pass = c && c.pass;
+      let detailText = '';
+      try { detailText = label.detail(c || {}); } catch { detailText = ''; }
+      return `
+        <div class="check">
+          <div class="dot ${pass ? 'pass' : 'fail'}"></div>
+          <div>
+            <div class="check-name">${label.name}</div>
+            <div class="check-detail">${escapeHtml(detailText)}</div>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    status.textContent = `Checked ${data.url}`;
+    report.classList.add('visible');
+  } catch (err) {
+    status.textContent = 'Something went wrong reaching the audit service. Try again in a moment.';
+    status.classList.add('error');
+  } finally {
+    btn.disabled = false;
+  }
+});
+</script>
+</body>
+</html>
