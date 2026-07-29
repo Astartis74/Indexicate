@@ -25,10 +25,7 @@
     min-height:100vh;
     padding:48px 20px 80px;
   }
-  .wrap{
-    max-width:760px;
-    margin:0 auto;
-  }
+  .wrap{max-width:780px;margin:0 auto;}
   .eyebrow{
     font-family:var(--mono);
     font-size:12px;
@@ -48,14 +45,10 @@
     color:var(--text-dim);
     font-size:15px;
     line-height:1.55;
-    max-width:56ch;
+    max-width:58ch;
     margin-bottom:32px;
   }
-  form{
-    display:flex;
-    gap:10px;
-    margin-bottom:8px;
-  }
+  form{display:flex;gap:10px;margin-bottom:8px;}
   input[type=text]{
     flex:1;
     background:var(--ink-2);
@@ -67,9 +60,7 @@
     border-radius:6px;
     outline:none;
   }
-  input[type=text]:focus{
-    border-color:var(--pass);
-  }
+  input[type=text]:focus{border-color:var(--pass);}
   input[type=text]::placeholder{color:var(--text-dim);}
   button{
     background:var(--pass);
@@ -95,7 +86,6 @@
     margin:20px 0 40px;
   }
   .disclaimer strong{color:var(--text);}
-
   #status{
     font-family:var(--mono);
     font-size:13px;
@@ -104,65 +94,76 @@
     margin-bottom:20px;
   }
   #status.error{color:var(--fail);}
-
   .report{display:none;}
   .report.visible{display:block;}
-
-  .score-row{
+  .overall{
     display:flex;
     align-items:baseline;
     gap:14px;
-    margin-bottom:6px;
+    margin-bottom:8px;
   }
-  .score{
+  .overall-score{
     font-family:var(--mono);
     font-size:44px;
     font-weight:700;
     letter-spacing:-0.02em;
   }
-  .score-label{
-    color:var(--text-dim);
-    font-size:13px;
-  }
-  .score-bar{
+  .overall-label{color:var(--text-dim);font-size:13px;}
+  .overall-bar{
     height:4px;
     background:var(--line);
     border-radius:2px;
     overflow:hidden;
-    margin-bottom:36px;
+    margin-bottom:40px;
   }
-  .score-bar-fill{
-    height:100%;
-    background:var(--pass);
-    transition:width .5s ease;
+  .overall-bar-fill{height:100%;background:var(--pass);transition:width .5s ease;}
+
+  .category{margin-bottom:36px;}
+  .category-head{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    margin-bottom:4px;
   }
+  .category-name{font-weight:650;font-size:16px;}
+  .category-score{font-family:var(--mono);font-size:13px;color:var(--text-dim);}
 
   .check{
     border-top:1px solid var(--line);
-    padding:18px 0;
+    padding:16px 0;
     display:grid;
     grid-template-columns:22px 1fr;
     gap:14px;
   }
   .check:last-child{border-bottom:1px solid var(--line);}
-  .dot{
-    width:9px;height:9px;border-radius:50%;
-    margin-top:6px;
-  }
+  .dot{width:9px;height:9px;border-radius:50%;margin-top:6px;}
   .dot.pass{background:var(--pass);}
   .dot.fail{background:var(--fail);}
-  .check-name{
-    font-weight:600;
-    font-size:15px;
-    margin-bottom:4px;
-  }
+  .check-name{font-weight:600;font-size:15px;margin-bottom:4px;}
   .check-detail{
     color:var(--text-dim);
     font-size:13px;
     line-height:1.5;
     font-family:var(--mono);
   }
-  .check-detail .val{color:var(--text);}
+
+  .priority{
+    background:var(--ink-2);
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:20px;
+    margin-top:8px;
+  }
+  .priority h3{
+    font-size:14px;
+    margin:0 0 12px;
+    color:var(--text-dim);
+    font-weight:600;
+    text-transform:uppercase;
+    letter-spacing:0.06em;
+  }
+  .priority ul{margin:0;padding-left:18px;}
+  .priority li{font-size:14px;line-height:1.7;}
 
   footer{
     margin-top:48px;
@@ -178,8 +179,8 @@
   <div class="eyebrow">Indexicate / Free Tool</div>
   <h1>GEO Checker</h1>
   <p class="lede">
-    Enter a live URL. This runs a real, server-side check against the page and its
-    root files — nothing here is simulated.
+    Enter a live URL. 20 real, server-side checks against the page and its root
+    files — technical foundation, content structure, and metadata. Nothing here is simulated.
   </p>
 
   <form id="auditForm">
@@ -188,23 +189,28 @@
   </form>
 
   <div class="disclaimer">
-    <strong>What this does and doesn't do:</strong> this checks technical signals
-    (HTTPS, robots.txt, llms.txt, title/meta, H1, schema.org, Open Graph, content
-    depth) that are known inputs to AI visibility. It does <strong>not</strong>
-    query ChatGPT, Perplexity, or any AI search engine on your behalf — that
-    requires a separate, manual audit. Any tool that claims to show you live
-    "AI search rankings" from a free automated check is not being honest with you.
+    <strong>What this does and doesn't do:</strong> this checks 20 technical
+    signals known to affect AI visibility — crawler access, structured data,
+    content structure, and metadata. It does <strong>not</strong> query
+    ChatGPT, Perplexity, or any AI search engine on your behalf — that
+    requires a separate, manual audit. Where a signal is genuinely ambiguous
+    (something wasn't found at its standard location but could exist another
+    way), the note says so rather than flatly calling it missing.
   </div>
 
   <div id="status"></div>
 
   <div class="report" id="report">
-    <div class="score-row">
-      <div class="score" id="scoreValue">0/7</div>
-      <div class="score-label">signals present</div>
+    <div class="overall">
+      <div class="overall-score" id="overallScore">0/20</div>
+      <div class="overall-label">signals present</div>
     </div>
-    <div class="score-bar"><div class="score-bar-fill" id="scoreBar" style="width:0%"></div></div>
-    <div id="checksList"></div>
+    <div class="overall-bar"><div class="overall-bar-fill" id="overallBar" style="width:0%"></div></div>
+    <div id="categoriesList"></div>
+    <div class="priority" id="priorityBox" style="display:none;">
+      <h3>Prioritize these</h3>
+      <ul id="priorityList"></ul>
+    </div>
   </div>
 
   <footer>
@@ -218,24 +224,48 @@ const input = document.getElementById('urlInput');
 const btn = document.getElementById('submitBtn');
 const status = document.getElementById('status');
 const report = document.getElementById('report');
-const checksList = document.getElementById('checksList');
-const scoreValue = document.getElementById('scoreValue');
-const scoreBar = document.getElementById('scoreBar');
+const categoriesList = document.getElementById('categoriesList');
+const overallScore = document.getElementById('overallScore');
+const overallBar = document.getElementById('overallBar');
+const priorityBox = document.getElementById('priorityBox');
+const priorityList = document.getElementById('priorityList');
+
+const CATEGORY_META = {
+  foundation: { name: 'Technical foundation' },
+  content: { name: 'Content structure' },
+  metadata: { name: 'Metadata & sharing' },
+};
 
 const LABELS = {
-  https: { name: 'HTTPS', detail: c => c.pass ? 'Site is served over HTTPS.' : 'Site is not using HTTPS.' },
-  robotsTxt: { name: 'robots.txt', detail: c => c.pass ? 'Found and reachable at /robots.txt.' : 'No robots.txt found at the root.' },
-  llmsTxt: { name: 'llms.txt', detail: c => c.pass ? 'Found at /llms.txt.' : 'No llms.txt found — most sites do not have one yet, but AI crawlers increasingly look for it.' },
+  https: { name: 'HTTPS', detail: c => c.pass ? 'Served over HTTPS.' : 'Not using HTTPS.' },
+  robotsTxt: { name: 'robots.txt', detail: c => c.pass ? 'Found at /robots.txt.' : 'No robots.txt found at the root.' },
+  aiBotsAllowed: { name: 'AI crawler access', detail: c => {
+      if (c.note) return c.note;
+      const blocked = (c.bots || []).filter(b => b.blocked).map(b => b.bot);
+      return blocked.length ? `Blocked in robots.txt: ${blocked.join(', ')}` : 'GPTBot, ClaudeBot, PerplexityBot and Google-Extended are not blocked.';
+    } },
+  llmsTxt: { name: 'llms.txt', detail: c => c.pass ? 'Found at /llms.txt.' : 'Not found — most sites do not have this yet.' },
+  sitemapXml: { name: 'sitemap.xml', detail: c => c.pass ? 'Found at /sitemap.xml.' : 'Not found at /sitemap.xml (may be declared elsewhere in robots.txt).' },
+  metaRobotsNoindex: { name: 'Meta robots', detail: c => c.pass ? 'No noindex directive found.' : `Meta robots content: "${c.value}" — this can block indexing.` },
+
   title: { name: 'Title tag', detail: c => c.value ? `"${c.value}" (${c.length} characters)` : 'No title tag found.' },
   metaDescription: { name: 'Meta description', detail: c => c.value ? `${c.length} characters` : 'No meta description found.' },
   h1: { name: 'H1 heading', detail: c => c.count === 1 ? `Exactly one H1: "${c.value || ''}"` : `${c.count} H1 tags found (should be exactly 1).` },
+  htmlLang: { name: 'Language declaration', detail: c => c.value ? `<html lang="${c.value}">` : 'No lang attribute on <html>.' },
+  canonical: { name: 'Canonical tag', detail: c => c.value ? `Points to ${c.value}` : 'No canonical tag found — risk of duplicate-content confusion.' },
+  textToHtmlRatio: { name: 'Text-to-HTML ratio', detail: c => `${c.value}% visible text. Below 15% often means content is rendered by JavaScript AI crawlers cannot execute.` },
+  contentDepth: { name: 'Content depth', detail: c => `${c.wordCount} visible words on the page.` },
+  altText: { name: 'Image alt text', detail: c => c.note ? c.note : `${c.withAlt}/${c.totalImages} images have alt text.` },
+
   schemaOrg: { name: 'Schema.org (JSON-LD)', detail: c => c.types && c.types.length ? `Found: ${c.types.join(', ')}` : 'No structured data found.' },
   openGraph: { name: 'Open Graph tags', detail: c => {
-      const have = [c.ogTitle && 'og:title', c.ogDescription && 'og:description', c.ogImage && 'og:image'].filter(Boolean);
       const missing = [!c.ogTitle && 'og:title', !c.ogDescription && 'og:description', !c.ogImage && 'og:image'].filter(Boolean);
       return missing.length ? `Missing: ${missing.join(', ')}` : 'All three core tags present.';
     } },
-  contentDepth: { name: 'Content depth', detail: c => `${c.wordCount} visible words on the page.` },
+  twitterCard: { name: 'Twitter Card', detail: c => c.pass ? 'twitter:card and twitter:title present.' : 'Missing twitter:card or twitter:title.' },
+  internalLinks: { name: 'Internal links', detail: c => `${c.count} internal links found on the page.` },
+  viewport: { name: 'Mobile viewport tag', detail: c => c.pass ? 'Viewport meta tag present.' : 'No viewport meta tag found.' },
+  favicon: { name: 'Favicon', detail: c => c.pass ? 'Favicon found.' : 'No favicon found.' },
 };
 
 function escapeHtml(str){
@@ -248,7 +278,7 @@ form.addEventListener('submit', async (e) => {
   if (!url) return;
 
   btn.disabled = true;
-  status.textContent = 'Running checks — fetching page, robots.txt, llms.txt...';
+  status.textContent = 'Running 20 checks — fetching page, robots.txt, sitemap, llms.txt...';
   status.classList.remove('error');
   report.classList.remove('visible');
 
@@ -256,42 +286,57 @@ form.addEventListener('submit', async (e) => {
     const res = await fetch('/api/audit?url=' + encodeURIComponent(url));
     const data = await res.json();
 
-    if (data.fetchError) {
-      status.textContent = data.fetchError;
-      status.classList.add('error');
-      btn.disabled = false;
-      return;
-    }
-    if (data.error) {
-      status.textContent = data.error;
-      status.classList.add('error');
-      btn.disabled = false;
-      return;
-    }
+    if (data.fetchError) { status.textContent = data.fetchError; status.classList.add('error'); btn.disabled = false; return; }
+    if (data.error) { status.textContent = data.error; status.classList.add('error'); btn.disabled = false; return; }
 
-    const checks = data.checks;
-    const keys = Object.keys(LABELS);
-    const passed = keys.filter(k => checks[k] && checks[k].pass).length;
+    const cats = data.categories;
+    let totalPass = 0, totalChecks = 0;
+    const failedItems = [];
 
-    scoreValue.textContent = `${passed}/${keys.length}`;
-    scoreBar.style.width = `${(passed / keys.length) * 100}%`;
+    categoriesList.innerHTML = Object.keys(cats).map(catKey => {
+      const checks = cats[catKey];
+      const keys = Object.keys(checks);
+      const passed = keys.filter(k => checks[k].pass).length;
+      totalPass += passed;
+      totalChecks += keys.length;
 
-    checksList.innerHTML = keys.map(k => {
-      const c = checks[k];
-      const label = LABELS[k];
-      const pass = c && c.pass;
-      let detailText = '';
-      try { detailText = label.detail(c || {}); } catch { detailText = ''; }
-      return `
-        <div class="check">
-          <div class="dot ${pass ? 'pass' : 'fail'}"></div>
-          <div>
-            <div class="check-name">${label.name}</div>
-            <div class="check-detail">${escapeHtml(detailText)}</div>
+      const rows = keys.map(k => {
+        const c = checks[k];
+        const label = LABELS[k];
+        let detailText = '';
+        try { detailText = label.detail(c); } catch { detailText = ''; }
+        if (!c.pass) failedItems.push(label.name);
+        return `
+          <div class="check">
+            <div class="dot ${c.pass ? 'pass' : 'fail'}"></div>
+            <div>
+              <div class="check-name">${label.name}</div>
+              <div class="check-detail">${escapeHtml(detailText)}</div>
+            </div>
           </div>
+        `;
+      }).join('');
+
+      return `
+        <div class="category">
+          <div class="category-head">
+            <div class="category-name">${CATEGORY_META[catKey].name}</div>
+            <div class="category-score">${passed}/${keys.length}</div>
+          </div>
+          ${rows}
         </div>
       `;
     }).join('');
+
+    overallScore.textContent = `${totalPass}/${totalChecks}`;
+    overallBar.style.width = `${(totalPass / totalChecks) * 100}%`;
+
+    if (failedItems.length) {
+      priorityBox.style.display = 'block';
+      priorityList.innerHTML = failedItems.map(name => `<li>${escapeHtml(name)}</li>`).join('');
+    } else {
+      priorityBox.style.display = 'none';
+    }
 
     status.textContent = `Checked ${data.url}`;
     report.classList.add('visible');
