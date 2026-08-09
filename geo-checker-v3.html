@@ -325,6 +325,7 @@ const CATEGORY_META = {
   foundation: { name: 'Technical foundation' },
   content: { name: 'Content structure' },
   metadata: { name: 'Metadata & sharing' },
+  security: { name: 'Security headers' },
 };
 
 const LABELS = {
@@ -427,6 +428,19 @@ const LABELS = {
     detail: c => c.pass ? 'Viewport meta tag present.' : 'No viewport meta tag found.' },
   favicon: { name: 'Favicon', priority: 'P2', impact: 'Minor trust and completeness signal; rarely affects AI visibility directly.',
     detail: c => c.pass ? 'Favicon found.' : 'No favicon found.' },
+
+  xContentTypeOptions: { name: 'X-Content-Type-Options', priority: 'P2', impact: 'Prevents browsers from guessing content types in ways that can be exploited — a baseline security signal, not a GEO signal directly.',
+    detail: c => c.value ? `Present: "${c.value}"` : 'Missing.' },
+  xFrameOptions: { name: 'X-Frame-Options', priority: 'P2', impact: 'Prevents your site from being embedded in a malicious iframe (clickjacking protection).',
+    detail: c => c.value ? `Present: "${c.value}"` : 'Missing.' },
+  referrerPolicy: { name: 'Referrer-Policy', priority: 'P2', impact: 'Controls how much referrer information leaks to other sites when someone clicks a link from your page.',
+    detail: c => c.value ? `Present: "${c.value}"` : 'Missing.' },
+  permissionsPolicy: { name: 'Permissions-Policy', priority: 'P2', impact: 'Restricts which browser features (camera, mic, geolocation) your page — and any embedded third-party content — can access.',
+    detail: c => c.value ? `Present: "${c.value}"` : 'Missing.' },
+  hsts: { name: 'Strict-Transport-Security (HSTS)', priority: 'P1', impact: 'Forces browsers to always use HTTPS for your domain, even if someone types http:// — closes a real downgrade-attack window.',
+    detail: c => c.value ? `Present: "${c.value}"` : 'Missing.' },
+  csp: { name: 'Content-Security-Policy', priority: 'P2', impact: 'Restricts which sources of scripts/styles/images your page will load — reduces damage if a third-party script is ever compromised.',
+    detail: c => c.value ? `Present.` : 'Missing.' },
 };
 
 function escapeHtml(str){

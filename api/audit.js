@@ -174,6 +174,13 @@ export default async function handler(req, res) {
   const html = await pageRes.text().catch(() => '');
   const htmlSize = Buffer.byteLength(html, 'utf8');
 
+  const xContentTypeOptions = (pageRes.headers.get('x-content-type-options') || '').toLowerCase();
+  const xFrameOptions = pageRes.headers.get('x-frame-options') || '';
+  const referrerPolicy = pageRes.headers.get('referrer-policy') || '';
+  const permissionsPolicy = pageRes.headers.get('permissions-policy') || '';
+  const hsts = pageRes.headers.get('strict-transport-security') || '';
+  const csp = pageRes.headers.get('content-security-policy') || '';
+
   // ---------- robots.txt + per-bot AI permissions ----------
   const robotsRes = await safeFetch(origin + '/robots.txt');
   const robotsOk = !!(robotsRes && robotsRes.ok);
@@ -342,6 +349,13 @@ export default async function handler(req, res) {
         viewport: { pass: hasViewport },
         favicon: { pass: faviconOk },
       },
+      security: {
+        xContentTypeOptions: { pass: xContentTypeOptions === 'nosniff', value: xContentTypeOptions || null },
+        xFrameOptions: { pass: !!xFrameOptions, value: xFrameOptions || null },
+        referrerPolicy: { pass: !!referrerPolicy, value: referrerPolicy || null },
+        permissionsPolicy: { pass: !!permissionsPolicy, value: permissionsPolicy || null },
+        hsts: { pass: !!hsts, value: hsts || null },
+        csp: { pass: !!csp, value: csp || null },
     },
   });
 }
