@@ -459,7 +459,7 @@ form.addEventListener('submit', async (e) => {
   report.classList.remove('visible');
 
   try {
-    const res = await fetch('/api/audit?url=' + encodeURIComponent(url));
+    const res = await fetch('/api/audit?url=' + encodeURIComponent(url), { cache: 'no-store' });
     const data = await res.json();
 
     if (data.fetchError) { status.textContent = data.fetchError; status.classList.add('error'); btn.disabled = false; return; }
