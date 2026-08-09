@@ -14,6 +14,7 @@ export const config = {
 };
 
 const TIMEOUT_MS = 8000;
+const MEDIUM_TIMEOUT_MS = 5000;
 const SHORT_TIMEOUT_MS = 3000;
 const AI_BOTS = ['GPTBot', 'ChatGPT-User', 'OAI-SearchBot', 'ClaudeBot', 'PerplexityBot', 'Google-Extended'];
 
@@ -182,8 +183,16 @@ export default async function handler(req, res) {
   const hsts = pageRes.headers.get('strict-transport-security') || '';
   const csp = pageRes.headers.get('content-security-policy') || '';
 
+  // ---------- independent fetches run in parallel, not sequentially ----------
+  const probePath = '/geo-checker-404-probe-' + Math.random().toString(36).slice(2, 10);
+  const [robotsRes, llmsRes, sitemapRes, notFoundRes] = await Promise.all([
+    safeFetch(origin + '/robots.txt', {}, MEDIUM_TIMEOUT_MS),
+    safeFetch(origin + '/llms.txt', {}, SHORT_TIMEOUT_MS),
+    safeFetch(origin + '/sitemap.xml', {}, MEDIUM_TIMEOUT_MS),
+    safeFetch(origin + probePath, {}, SHORT_TIMEOUT_MS),
+  ]);
+
   // ---------- robots.txt + per-bot AI permissions ----------
-  const robotsRes = await safeFetch(origin + '/robots.txt');
   const robotsOk = !!(robotsRes && robotsRes.ok);
   const robotsText = robotsOk ? await robotsRes.text().catch(() => '') : '';
   const robotsGroups = robotsOk ? parseRobotsGroups(robotsText) : [];
@@ -193,7 +202,6 @@ export default async function handler(req, res) {
   }
 
   // ---------- llms.txt ----------
-  const llmsRes = await safeFetch(origin + '/llms.txt', {}, SHORT_TIMEOUT_MS);
   const llmsOk = !!(llmsRes && llmsRes.ok);
   const llmsContentType = llmsOk ? (llmsRes.headers.get('content-type') || '') : '';
   const llmsText = llmsOk ? await llmsRes.text().catch(() => '') : '';
@@ -202,8 +210,11 @@ export default async function handler(req, res) {
   const llmsIsPlainText = llmsOk ? (llmsContentType.includes('text/plain') || (!llmsContentType.includes('html') && !llmsContentType.includes('json'))) : null;
 
   // ---------- sitemap.xml ----------
-  const sitemapRes = await safeFetch(origin + '/sitemap.xml');
   const sitemapOk = !!(sitemapRes && sitemapRes.ok);
+
+  // ---------- 404 handling (soft-404 detection) ----------
+  const notFoundStatus = notFoundRes ? notFoundRes.status : null;
+  const notFoundIsProper4xx = notFoundStatus !== null && notFoundStatus >= 400 && notFoundStatus < 500;
 
   // ---------- meta robots, detailed ----------
   const metaRobotsMatch = html.match(/<meta[^>]+name=["']robots["'][^>]+content=["']([\s\S]*?)["'][^>]*>/i);
@@ -304,12 +315,6 @@ export default async function handler(req, res) {
   if (urlHasUnderscore) urlStructureIssues.push('uses underscores instead of hyphens');
   if (urlHasUppercase) urlStructureIssues.push('contains uppercase letters');
   if (urlParamCount > 2) urlStructureIssues.push(`has ${urlParamCount} query parameters`);
-
-  // ---------- 404 handling (soft-404 detection) ----------
-  const probePath = '/geo-checker-404-probe-' + Math.random().toString(36).slice(2, 10);
-  const notFoundRes = await safeFetch(origin + probePath, {}, SHORT_TIMEOUT_MS);
-  const notFoundStatus = notFoundRes ? notFoundRes.status : null;
-  const notFoundIsProper4xx = notFoundStatus !== null && notFoundStatus >= 400 && notFoundStatus < 500;
 
   res.status(200).json({
     url: targetUrl,
