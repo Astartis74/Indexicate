@@ -290,6 +290,26 @@ export default async function handler(req, res) {
     faviconOk = !!(favRes && favRes.ok);
   }
 
+  // ---------- hreflang ----------
+  const hreflangMatches = [...html.matchAll(/<link[^>]+rel=["']alternate["'][^>]+hreflang=["']([^"']+)["']/gi)];
+  const hreflangValues = hreflangMatches.map((m) => m[1]);
+
+  // ---------- URL structure ----------
+  const urlPath = new URL(targetUrl).pathname;
+  const urlHasUnderscore = urlPath.includes('_');
+  const urlHasUppercase = /[A-Z]/.test(urlPath);
+  const urlParamCount = new URL(targetUrl).searchParams.size;
+  const urlStructureIssues = [];
+  if (urlHasUnderscore) urlStructureIssues.push('uses underscores instead of hyphens');
+  if (urlHasUppercase) urlStructureIssues.push('contains uppercase letters');
+  if (urlParamCount > 2) urlStructureIssues.push(`has ${urlParamCount} query parameters`);
+
+  // ---------- 404 handling (soft-404 detection) ----------
+  const probePath = '/geo-checker-404-probe-' + Math.random().toString(36).slice(2, 10);
+  const notFoundRes = await safeFetch(origin + probePath, {}, SHORT_TIMEOUT_MS);
+  const notFoundStatus = notFoundRes ? notFoundRes.status : null;
+  const notFoundIsProper4xx = notFoundStatus !== null && notFoundStatus >= 400 && notFoundStatus < 500;
+
   res.status(200).json({
     url: targetUrl,
     categories: {
@@ -310,6 +330,9 @@ export default async function handler(req, res) {
         internalLinksStatic: { pass: staticInternalLinks.length >= 3, count: staticInternalLinks.length },
         navElement: { pass: hasNavElement },
         noscriptFallback: { pass: !hasNoscript || noscriptHasLinks, hasNoscript, note: !hasNoscript ? 'No <noscript> block found — only relevant if this is a JS-heavy site.' : null },
+        hreflang: { pass: true, values: hreflangValues, note: hreflangValues.length === 0 ? 'No hreflang tags found — only relevant for multi-language sites.' : null },
+        urlStructure: { pass: urlStructureIssues.length === 0, issues: urlStructureIssues },
+        notFoundHandling: { pass: notFoundIsProper4xx, status: notFoundStatus, note: notFoundStatus === null ? 'Could not reach a test URL to check 404 behavior.' : null },
       },
       content: {
         title: {

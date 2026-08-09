@@ -374,6 +374,12 @@ const LABELS = {
     detail: c => c.pass ? '<nav> element found.' : 'No <nav> element found.' },
   noscriptFallback: { name: 'Noscript fallback', priority: 'P1', impact: 'On JavaScript-heavy sites, a <noscript> fallback with real links is often the only way non-JS crawlers see any content.',
     detail: c => c.note || (c.pass ? 'Noscript fallback present with links, or not needed.' : '<noscript> present but contains no links.') },
+  hreflang: { name: 'hreflang tags', priority: 'P2', impact: 'Tells search and AI systems which language/region version of a page to serve — only matters if you have multiple language versions.',
+    detail: c => c.note || (c.values && c.values.length ? `Found: ${c.values.join(', ')}` : 'None found.') },
+  urlStructure: { name: 'URL structure', priority: 'P2', impact: 'Clean URLs (lowercase, hyphens, few parameters) are easier for crawlers to parse and more likely to be cited cleanly.',
+    detail: c => c.issues && c.issues.length ? `Issues: ${c.issues.join(', ')}` : 'Clean URL structure.' },
+  notFoundHandling: { name: '404 handling', priority: 'P1', impact: 'If a nonexistent page returns 200 instead of 404 ("soft 404"), crawlers can\'t tell real pages from missing ones, which wastes crawl budget and can dilute how your site is indexed.',
+    detail: c => c.note || (c.pass ? `Returns a proper ${c.status} for a nonexistent page.` : `Returned ${c.status} for a nonexistent page — should be a 4xx status.`) },
 
   title: { name: 'Title tag', priority: 'P0', impact: 'Often the first thing an AI model reads to understand what the page is about.',
     detail: c => c.value ? `"${c.value}" (${c.length} characters)` : 'No title tag found.' },
