@@ -386,8 +386,12 @@ const LABELS = {
     detail: c => c.value ? `Points to ${c.value}` : 'No canonical tag found — risk of duplicate-content confusion.' },
   canonicalMatchesServed: { name: 'Canonical matches served URL', priority: 'P0', impact: 'A mismatch (e.g. canonical says www, but the page is served without www) actively confuses crawlers about which URL is authoritative.',
     detail: c => c.note || (c.pass ? 'Canonical URL matches the URL served.' : 'Canonical URL does not match the URL served — check www/non-www or trailing slash.') },
-  textToHtmlRatio: { name: 'Text-to-HTML ratio', priority: 'P0', impact: 'Below the threshold often means content is rendered by JavaScript that AI crawlers cannot execute — they may see a blank page.',
-    detail: c => `${c.value}% visible text. Below 15% often means content is rendered by JavaScript AI crawlers cannot execute.` },
+  textToHtmlRatio: { name: 'Text-to-HTML ratio', priority: 'P0', impact: 'A genuinely low ratio combined with low extracted word count can mean content is rendered by JavaScript that AI crawlers cannot execute. A low ratio alone, with healthy word count, usually just means bloated markup/scripts — not hidden content.',
+    detail: c => {
+      if (c.value >= 15) return `${c.value}% visible text — healthy ratio.`;
+      if (c.wordCount >= 300) return `${c.value}% visible text, but ${c.wordCount} words were still successfully extracted from the raw HTML — this looks like markup/script bloat, not hidden content.`;
+      return `${c.value}% visible text and only ${c.wordCount} words extracted — this combination suggests content may be rendered by JavaScript that crawlers cannot execute.`;
+    } },
   contentDepth: { name: 'Content depth', priority: 'P1', impact: 'Thin content gives AI models little to work with when extracting a confident answer.',
     detail: c => `${c.wordCount} visible words on the page.` },
   altText: { name: 'Image alt text', priority: 'P2', impact: 'Alt text is one of the few ways AI systems can understand image content.',

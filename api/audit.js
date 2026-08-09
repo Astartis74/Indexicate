@@ -317,7 +317,7 @@ export default async function handler(req, res) {
         htmlLang: { pass: !!htmlLang, value: htmlLang },
         canonical: { pass: !!canonicalUrl, value: canonicalUrl },
         canonicalMatchesServed: { pass: canonicalMatchesServed !== false, note: !canonicalUrl ? 'No canonical tag to compare.' : null, value: canonicalUrl },
-        textToHtmlRatio: { pass: textToHtmlRatio >= 15, value: Math.round(textToHtmlRatio * 10) / 10 },
+        textToHtmlRatio: { pass: textToHtmlRatio >= 15 || wordCount >= 300, value: Math.round(textToHtmlRatio * 10) / 10, wordCount },
         contentDepth: { pass: wordCount >= 300, wordCount },
         altText: {
           pass: altRatio === null || altRatio >= 0.8,
