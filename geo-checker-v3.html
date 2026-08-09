@@ -724,7 +724,13 @@ siteScanBtn.addEventListener('click', async () => {
       barEl.style.width = `${Math.round(((i + 1) / pagesToScan.length) * 100)}%`;
     }
 
-    const rows = results.map((r) => {
+    const sortedResults = [...results].sort((a, b) => {
+      const pctA = a.score ? a.score.totalPass / a.score.totalChecks : -1;
+      const pctB = b.score ? b.score.totalPass / b.score.totalChecks : -1;
+      return pctA - pctB;
+    });
+
+    const rows = sortedResults.map((r) => {
       if (!r.score) {
         return `<tr><td><a class="site-scan-url" href="${r.url}" target="_blank" rel="noopener">${escapeHtml(r.url)}</a></td><td class="site-scan-score" style="color:var(--fail)">—</td><td class="site-scan-issues">${escapeHtml(r.fetchError || 'Could not scan.')}</td></tr>`;
       }
@@ -735,29 +741,37 @@ siteScanBtn.addEventListener('click', async () => {
     }).join('');
 
     const failCounts = {};
+    const failPriority = {};
     results.forEach((r) => {
       if (r.score) {
         r.score.fails.forEach((f) => {
           failCounts[f.name] = (failCounts[f.name] || 0) + 1;
+          failPriority[f.name] = f.priority;
         });
       }
     });
-    const commonFails = Object.entries(failCounts).sort((a, b) => b[1] - a[1]).slice(0, 5);
+    const commonFails = Object.entries(failCounts)
+      .sort((a, b) => {
+        const prioDiff = failPriority[a[0]].localeCompare(failPriority[b[0]]);
+        if (prioDiff !== 0) return prioDiff;
+        return b[1] - a[1];
+      })
+      .slice(0, 8);
     const validResults = results.filter((r) => r.score);
     const avgScore = validResults.length
       ? Math.round((validResults.reduce((sum, r) => sum + (r.score.totalPass / r.score.totalChecks), 0) / validResults.length) * 100)
       : null;
 
     siteScanDiv.innerHTML = `
-      <div class="site-scan-status">Scanned ${results.length} of ${totalFound} pages found in sitemap.xml${totalFound > pagesToScan.length ? ` (capped at ${MAX_SITE_PAGES})` : ''}.${avgScore !== null ? ` Average score: ${avgScore}%.` : ''}</div>
+      <div class="site-scan-status">Scanned ${results.length} of ${totalFound} pages found in sitemap.xml${totalFound > pagesToScan.length ? ` (capped at ${MAX_SITE_PAGES})` : ''}.${avgScore !== null ? ` Average score: ${avgScore}%.` : ''} Sorted worst-scoring pages first.</div>
       <table class="site-scan-table">
         <thead><tr><th>Page</th><th>Score</th><th>Top issues</th></tr></thead>
         <tbody>${rows}</tbody>
       </table>
       ${commonFails.length ? `
         <div class="site-scan-summary">
-          <h4>Most common issues across scanned pages</h4>
-          <ul>${commonFails.map(([name, count]) => `<li>${escapeHtml(name)} — found on ${count}/${validResults.length} pages</li>`).join('')}</ul>
+          <h4>Most common issues across scanned pages — sorted by priority</h4>
+          <ul>${commonFails.map(([name, count]) => `<li><span class="priority-badge priority-${failPriority[name]}">${failPriority[name]}</span> ${escapeHtml(name)} — found on ${count}/${validResults.length} pages</li>`).join('')}</ul>
         </div>
       ` : ''}
     `;
