@@ -28,6 +28,25 @@
     padding:48px 20px 80px;
   }
   .wrap{max-width:780px;margin:0 auto;}
+  .site-logo{
+    display:inline-flex;
+    align-items:center;
+    gap:10px;
+    font-family:'DM Sans','Inter',sans-serif;
+    font-size:24px;
+    font-weight:800;
+    color:var(--text);
+    text-decoration:none;
+    letter-spacing:-0.02em;
+    margin-bottom:24px;
+  }
+  .site-logo-dot{
+    width:10px;height:10px;
+    border-radius:50%;
+    background:var(--pass);
+    animation:blink 1.7s infinite;
+  }
+  @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
   .eyebrow{
     font-family:var(--mono);
     font-size:12px;
@@ -148,6 +167,36 @@
     line-height:1.5;
     font-family:var(--mono);
   }
+  .check-impact{
+    color:var(--text-dim);
+    font-size:12px;
+    line-height:1.5;
+    font-family:var(--sans);
+    font-style:italic;
+    margin-top:6px;
+    opacity:0.85;
+  }
+  .check-confidence{
+    color:#f2a541;
+    font-size:12px;
+    line-height:1.5;
+    font-family:var(--sans);
+    margin-top:4px;
+  }
+  .priority-badge{
+    display:inline-block;
+    font-family:var(--mono);
+    font-size:10.5px;
+    font-weight:700;
+    padding:2px 7px;
+    border-radius:4px;
+    margin-left:8px;
+    vertical-align:middle;
+    letter-spacing:0.03em;
+  }
+  .priority-P0{background:rgba(239,68,68,0.15);color:#ef4444;}
+  .priority-P1{background:rgba(242,165,65,0.15);color:#f2a541;}
+  .priority-P2{background:rgba(154,164,178,0.15);color:var(--text-dim);}
 
   .priority{
     background:var(--ink-2);
@@ -204,6 +253,9 @@
 </head>
 <body>
 <div class="wrap">
+  <a href="index.html" class="site-logo">
+    <span class="site-logo-dot"></span>Indexicate
+  </a>
   <div class="eyebrow">Indexicate / Free Tool</div>
   <h1>GEO Checker</h1>
   <p class="lede">
@@ -276,35 +328,101 @@ const CATEGORY_META = {
 };
 
 const LABELS = {
-  https: { name: 'HTTPS', detail: c => c.pass ? 'Served over HTTPS.' : 'Not using HTTPS.' },
-  robotsTxt: { name: 'robots.txt', detail: c => c.pass ? 'Found at /robots.txt.' : 'No robots.txt found at the root.' },
-  aiBotsAllowed: { name: 'AI crawler access', detail: c => {
-      if (c.note) return c.note;
-      const blocked = (c.bots || []).filter(b => b.blocked).map(b => b.bot);
-      return blocked.length ? `Blocked in robots.txt: ${blocked.join(', ')}` : 'GPTBot, ClaudeBot, PerplexityBot and Google-Extended are not blocked.';
+  https: { name: 'HTTPS', priority: 'P0', impact: 'Some AI crawlers deprioritize non-secure sites; it is also a basic trust signal.',
+    detail: c => c.pass ? 'Served over HTTPS.' : 'Not using HTTPS.' },
+  robotsTxt: { name: 'robots.txt', priority: 'P1', impact: 'Without it, crawlers fall back to default behavior — you lose control over what gets crawled.',
+    detail: c => c.pass ? 'Found at /robots.txt.' : 'No robots.txt found at the root.' },
+  sitemapXml: { name: 'sitemap.xml', priority: 'P1', impact: 'Helps crawlers discover all your pages, not just the ones they stumble onto.',
+    confidence: c => c.pass ? null : 'Medium — may be declared elsewhere in robots.txt instead.',
+    detail: c => c.pass ? 'Found at /sitemap.xml.' : 'Not found at /sitemap.xml (may be declared elsewhere in robots.txt).' },
+  metaRobotsIndexFollow: { name: 'Meta robots — index/follow', priority: 'P0', impact: 'A noindex or nofollow directive actively tells crawlers to skip this page — it overrides every other signal.',
+    detail: c => c.pass ? 'No noindex/nofollow directive found.' : `Meta robots content: "${c.value}" — this blocks indexing or link-following.` },
+  metaRobotsSnippet: { name: 'Meta robots — snippet controls', priority: 'P0', impact: 'nosnippet or a limited max-snippet can prevent your content from being eligible for AI Overviews and similar answer boxes.',
+    detail: c => {
+      const parts = [];
+      if (c.nosnippet) parts.push('nosnippet is set (blocks snippet use)');
+      if (!c.maxSnippet) parts.push('max-snippet:-1 not set');
+      if (!c.maxImagePreview) parts.push('max-image-preview:large not set');
+      return parts.length ? parts.join('; ') : 'nosnippet absent, max-snippet:-1 and max-image-preview:large present.';
     } },
-  llmsTxt: { name: 'llms.txt', detail: c => c.pass ? 'Found at /llms.txt.' : 'Not found — most sites do not have this yet.' },
-  sitemapXml: { name: 'sitemap.xml', detail: c => c.pass ? 'Found at /sitemap.xml.' : 'Not found at /sitemap.xml (may be declared elsewhere in robots.txt).' },
-  metaRobotsNoindex: { name: 'Meta robots', detail: c => c.pass ? 'No noindex directive found.' : `Meta robots content: "${c.value}" — this can block indexing.` },
+  llmsTxtExists: { name: 'llms.txt exists', priority: 'P0', impact: 'An emerging standard AI crawlers check first to understand a site before crawling further.',
+    detail: c => c.pass ? 'Found at /llms.txt, returns 200.' : 'Not found — most sites do not have this yet.' },
+  llmsTxtReferenced: { name: 'llms.txt referenced in <head>', priority: 'P1', impact: 'A <link rel="alternate" type="text/plain"> reference helps crawlers discover llms.txt without guessing the path.',
+    detail: c => c.note || (c.pass ? 'Referenced correctly in <head>.' : 'Not referenced in <head>.') },
+  aiBotGPTBot: { name: 'GPTBot access', priority: 'P1', impact: 'If blocked, ChatGPT\'s crawler cannot read your content at all.',
+    confidence: c => c.note ? 'Medium — no robots.txt to check, assuming unblocked by default.' : null,
+    detail: c => c.pass ? 'Not blocked in robots.txt.' : 'Blocked in robots.txt.' },
+  aiBotChatGPTUser: { name: 'ChatGPT-User access', priority: 'P1', impact: 'This is the bot used when a person asks ChatGPT to browse your page live — blocking it breaks that use case.',
+    confidence: c => c.note ? 'Medium — no robots.txt to check, assuming unblocked by default.' : null,
+    detail: c => c.pass ? 'Not blocked in robots.txt.' : 'Blocked in robots.txt.' },
+  aiBotOAISearchBot: { name: 'OAI-SearchBot access', priority: 'P1', impact: 'Powers ChatGPT search features — blocking it removes you from those results.',
+    confidence: c => c.note ? 'Medium — no robots.txt to check, assuming unblocked by default.' : null,
+    detail: c => c.pass ? 'Not blocked in robots.txt.' : 'Blocked in robots.txt.' },
+  aiBotClaudeBot: { name: 'ClaudeBot access', priority: 'P1', impact: 'If blocked, Claude cannot read your content at all.',
+    confidence: c => c.note ? 'Medium — no robots.txt to check, assuming unblocked by default.' : null,
+    detail: c => c.pass ? 'Not blocked in robots.txt.' : 'Blocked in robots.txt.' },
+  aiBotPerplexityBot: { name: 'PerplexityBot access', priority: 'P1', impact: 'If blocked, Perplexity cannot read your content at all.',
+    confidence: c => c.note ? 'Medium — no robots.txt to check, assuming unblocked by default.' : null,
+    detail: c => c.pass ? 'Not blocked in robots.txt.' : 'Blocked in robots.txt.' },
+  aiBotGoogleExtended: { name: 'Google-Extended access', priority: 'P1', impact: 'Controls whether Google can use your content for its AI features (separate from normal Googlebot).',
+    confidence: c => c.note ? 'Medium — no robots.txt to check, assuming unblocked by default.' : null,
+    detail: c => c.pass ? 'Not blocked in robots.txt.' : 'Blocked in robots.txt.' },
+  internalLinksStatic: { name: 'Internal links (static)', priority: 'P0', impact: 'Crawlers that don\'t execute JavaScript can only follow real <a href> links — JS-only navigation is invisible to them.',
+    detail: c => `${c.count} static internal links found (minimum 3 recommended).` },
+  navElement: { name: '<nav> element present', priority: 'P2', impact: 'Helps crawlers and assistive tech identify the site\'s primary navigation structure.',
+    detail: c => c.pass ? '<nav> element found.' : 'No <nav> element found.' },
+  noscriptFallback: { name: 'Noscript fallback', priority: 'P1', impact: 'On JavaScript-heavy sites, a <noscript> fallback with real links is often the only way non-JS crawlers see any content.',
+    detail: c => c.note || (c.pass ? 'Noscript fallback present with links, or not needed.' : '<noscript> present but contains no links.') },
 
-  title: { name: 'Title tag', detail: c => c.value ? `"${c.value}" (${c.length} characters)` : 'No title tag found.' },
-  metaDescription: { name: 'Meta description', detail: c => c.value ? `${c.length} characters` : 'No meta description found.' },
-  h1: { name: 'H1 heading', detail: c => c.count === 1 ? `Exactly one H1: "${c.value || ''}"` : `${c.count} H1 tags found (should be exactly 1).` },
-  htmlLang: { name: 'Language declaration', detail: c => c.value ? `<html lang="${c.value}">` : 'No lang attribute on <html>.' },
-  canonical: { name: 'Canonical tag', detail: c => c.value ? `Points to ${c.value}` : 'No canonical tag found — risk of duplicate-content confusion.' },
-  textToHtmlRatio: { name: 'Text-to-HTML ratio', detail: c => `${c.value}% visible text. Below 15% often means content is rendered by JavaScript AI crawlers cannot execute.` },
-  contentDepth: { name: 'Content depth', detail: c => `${c.wordCount} visible words on the page.` },
-  altText: { name: 'Image alt text', detail: c => c.note ? c.note : `${c.withAlt}/${c.totalImages} images have alt text.` },
+  title: { name: 'Title tag', priority: 'P0', impact: 'Often the first thing an AI model reads to understand what the page is about.',
+    detail: c => c.value ? `"${c.value}" (${c.length} characters)` : 'No title tag found.' },
+  metaDescription: { name: 'Meta description', priority: 'P1', impact: 'Used by many systems as a fallback summary when generating an answer.',
+    detail: c => c.value ? `${c.length} characters` : 'No meta description found.' },
+  h1: { name: 'H1 heading', priority: 'P1', impact: 'Multiple or missing H1s make it harder for crawlers to identify the main topic.',
+    detail: c => c.count === 1 ? `Exactly one H1: "${c.value || ''}"` : `${c.count} H1 tags found (should be exactly 1).` },
+  htmlLang: { name: 'Language declaration', priority: 'P2', impact: 'Helps AI systems serve or attribute your content to the right language and region.',
+    detail: c => c.value ? `<html lang="${c.value}">` : 'No lang attribute on <html>.' },
+  canonical: { name: 'Canonical tag', priority: 'P1', impact: 'Without it, duplicate versions of a page can dilute or confuse how it gets indexed.',
+    detail: c => c.value ? `Points to ${c.value}` : 'No canonical tag found — risk of duplicate-content confusion.' },
+  canonicalMatchesServed: { name: 'Canonical matches served URL', priority: 'P0', impact: 'A mismatch (e.g. canonical says www, but the page is served without www) actively confuses crawlers about which URL is authoritative.',
+    detail: c => c.note || (c.pass ? 'Canonical URL matches the URL served.' : 'Canonical URL does not match the URL served — check www/non-www or trailing slash.') },
+  textToHtmlRatio: { name: 'Text-to-HTML ratio', priority: 'P0', impact: 'Below the threshold often means content is rendered by JavaScript that AI crawlers cannot execute — they may see a blank page.',
+    detail: c => `${c.value}% visible text. Below 15% often means content is rendered by JavaScript AI crawlers cannot execute.` },
+  contentDepth: { name: 'Content depth', priority: 'P1', impact: 'Thin content gives AI models little to work with when extracting a confident answer.',
+    detail: c => `${c.wordCount} visible words on the page.` },
+  altText: { name: 'Image alt text', priority: 'P2', impact: 'Alt text is one of the few ways AI systems can understand image content.',
+    detail: c => c.note ? c.note : `${c.withAlt}/${c.totalImages} images have alt text.` },
 
-  schemaOrg: { name: 'Schema.org (JSON-LD)', detail: c => c.types && c.types.length ? `Found: ${c.types.join(', ')}` : 'No structured data found.' },
-  openGraph: { name: 'Open Graph tags', detail: c => {
-      const missing = [!c.ogTitle && 'og:title', !c.ogDescription && 'og:description', !c.ogImage && 'og:image'].filter(Boolean);
-      return missing.length ? `Missing: ${missing.join(', ')}` : 'All three core tags present.';
-    } },
-  twitterCard: { name: 'Twitter Card', detail: c => c.pass ? 'twitter:card and twitter:title present.' : 'Missing twitter:card or twitter:title.' },
-  internalLinks: { name: 'Internal links', detail: c => `${c.count} internal links found on the page.` },
-  viewport: { name: 'Mobile viewport tag', detail: c => c.pass ? 'Viewport meta tag present.' : 'No viewport meta tag found.' },
-  favicon: { name: 'Favicon', detail: c => c.pass ? 'Favicon found.' : 'No favicon found.' },
+  schemaWebSite: { name: 'Schema: WebSite', priority: 'P1', impact: 'Declares your site as an entity, helping AI systems recognize it as a distinct source.',
+    detail: c => c.pass ? 'WebSite schema found.' : 'No WebSite schema found.' },
+  schemaOrganization: { name: 'Schema: Organization', priority: 'P0', impact: 'The single strongest structured-data signal for machine understanding of who you are as a business.',
+    detail: c => c.pass ? 'Organization (or LocalBusiness) schema found with a name.' : 'No Organization/LocalBusiness schema found.' },
+  schemaOrganizationSameAs: { name: 'Organization: sameAs links', priority: 'P1', impact: 'sameAs links (social profiles, Wikipedia, etc.) help AI systems confirm your identity across the web.',
+    detail: c => c.note || (c.pass ? 'sameAs array present.' : 'No sameAs links found on the Organization.') },
+  schemaOrganizationId: { name: 'Organization: @id', priority: 'P2', impact: 'A stable @id lets different pages and mentions of your Organization be tied together as the same entity.',
+    detail: c => c.note || (c.pass ? '@id present on Organization.' : 'No @id found on the Organization.') },
+  schemaArticle: { name: 'Schema: Article', priority: 'P2', impact: 'Article/BlogPosting schema helps AI systems attribute authorship and publish dates correctly.',
+    detail: c => c.note + (c.pass ? ' Found.' : ' Not found.') },
+  schemaFAQPage: { name: 'Schema: FAQPage', priority: 'P2', impact: 'FAQPage schema is one of the more direct ways to get quoted verbatim in AI-generated answers.',
+    detail: c => c.note + (c.pass ? ' Found.' : ' Not found.') },
+  schemaValidJson: { name: 'Structured data validity', priority: 'P1', impact: 'Invalid JSON-LD may be ignored entirely by parsers, silently wasting the effort of adding it.',
+    detail: c => c.note || 'All JSON-LD blocks parsed successfully.' },
+  openGraphTitle: { name: 'og:title', priority: 'P1', impact: 'Controls the title shown when your page is shared or referenced across platforms.',
+    detail: c => c.pass ? 'Present.' : 'Missing.' },
+  openGraphDescription: { name: 'og:description', priority: 'P1', impact: 'Controls the description shown when your page is shared or referenced.',
+    detail: c => c.pass ? 'Present.' : 'Missing.' },
+  openGraphImage: { name: 'og:image', priority: 'P1', impact: 'A missing or relative-path image often fails to render in share previews entirely.',
+    detail: c => !c.hasTag ? 'Missing.' : (c.isAbsolute ? 'Present with an absolute URL.' : 'Present but not an absolute URL — may not render correctly.') },
+  openGraphUrlMatchesCanonical: { name: 'og:url matches canonical', priority: 'P2', impact: 'A mismatch can cause shares to be attributed to the wrong URL.',
+    detail: c => c.note || (c.pass ? 'og:url matches the canonical URL.' : 'og:url does not match the canonical URL.') },
+  twitterCard: { name: 'twitter:card', priority: 'P2', impact: 'Controls whether shares on X/Twitter get a rich preview card at all.',
+    detail: c => c.value ? `Present: "${c.value}"` : 'Missing.' },
+  twitterImage: { name: 'twitter:image', priority: 'P2', impact: 'Without it, X/Twitter falls back to og:image or shows no image at all.',
+    detail: c => c.pass ? 'Present.' : 'Missing.' },
+  viewport: { name: 'Mobile viewport tag', priority: 'P2', impact: 'Missing this can cause mobile rendering issues, which indirectly affects crawlability.',
+    detail: c => c.pass ? 'Viewport meta tag present.' : 'No viewport meta tag found.' },
+  favicon: { name: 'Favicon', priority: 'P2', impact: 'Minor trust and completeness signal; rarely affects AI visibility directly.',
+    detail: c => c.pass ? 'Favicon found.' : 'No favicon found.' },
 };
 
 function escapeHtml(str){
@@ -348,14 +466,20 @@ form.addEventListener('submit', async (e) => {
         const label = LABELS[k];
         let detailText = '';
         try { detailText = label.detail(c); } catch { detailText = ''; }
-        if (!c.pass) failedItems.push(label.name);
-        textLines.push(`[${c.pass ? 'OK' : 'MISSING'}] ${label.name} — ${detailText}`);
+        let confidenceText = null;
+        try { confidenceText = label.confidence ? label.confidence(c) : null; } catch { confidenceText = null; }
+        if (!c.pass) failedItems.push({ name: label.name, priority: label.priority });
+        textLines.push(`[${c.pass ? 'OK' : 'MISSING'}] ${label.name} (${label.priority}) — ${detailText}`);
+        textLines.push(`    Impact: ${label.impact}`);
+        if (confidenceText) textLines.push(`    Confidence: ${confidenceText}`);
         return `
           <div class="check">
             <div class="dot ${c.pass ? 'pass' : 'fail'}"></div>
             <div>
-              <div class="check-name">${label.name}</div>
+              <div class="check-name">${label.name} <span class="priority-badge priority-${label.priority}">${label.priority}</span></div>
               <div class="check-detail">${escapeHtml(detailText)}</div>
+              <div class="check-impact">Impact: ${escapeHtml(label.impact)}</div>
+              ${confidenceText ? `<div class="check-confidence">Confidence: ${escapeHtml(confidenceText)}</div>` : ''}
             </div>
           </div>
         `;
@@ -377,7 +501,8 @@ form.addEventListener('submit', async (e) => {
 
     if (failedItems.length) {
       priorityBox.style.display = 'block';
-      priorityList.innerHTML = failedItems.map(name => `<li>${escapeHtml(name)}</li>`).join('');
+      const sortedFails = [...failedItems].sort((a, b) => a.priority.localeCompare(b.priority));
+      priorityList.innerHTML = sortedFails.map(item => `<li><span class="priority-badge priority-${item.priority}">${item.priority}</span> ${escapeHtml(item.name)}</li>`).join('');
     } else {
       priorityBox.style.display = 'none';
     }
@@ -388,7 +513,7 @@ form.addEventListener('submit', async (e) => {
       `URL: ${data.url}`,
       `Overall score: ${totalPass}/${totalChecks}`,
       ...textLines,
-      failedItems.length ? `\nPrioritize these:\n- ${failedItems.join('\n- ')}` : '',
+      failedItems.length ? `\nPrioritize these:\n- ${[...failedItems].sort((a, b) => a.priority.localeCompare(b.priority)).map(i => `[${i.priority}] ${i.name}`).join('\n- ')}` : '',
       `\nGenerated by indexicate.com/geo-checker-v3.html`,
     ].join('\n');
 
