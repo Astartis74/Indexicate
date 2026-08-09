@@ -243,6 +243,83 @@
     min-height:18px;
   }
 
+  .site-scan{
+    margin:24px 0 40px;
+    padding:20px;
+    border:1px solid var(--line);
+    border-radius:8px;
+    background:var(--ink-2);
+  }
+  .site-scan-status{
+    font-family:var(--mono);
+    font-size:13px;
+    color:var(--text-dim);
+    margin-bottom:14px;
+  }
+  .site-scan-bar-track{
+    height:4px;
+    background:var(--line);
+    border-radius:2px;
+    overflow:hidden;
+    margin-bottom:18px;
+  }
+  .site-scan-bar-fill{
+    height:100%;
+    background:var(--pass);
+    transition:width .3s ease;
+  }
+  .site-scan-table{
+    width:100%;
+    border-collapse:collapse;
+    font-size:13.5px;
+  }
+  .site-scan-table th{
+    text-align:left;
+    font-family:var(--mono);
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:0.06em;
+    color:var(--text-dim);
+    padding:8px 10px;
+    border-bottom:1px solid var(--line);
+  }
+  .site-scan-table td{
+    padding:10px;
+    border-bottom:1px solid var(--line);
+    vertical-align:top;
+  }
+  .site-scan-url{
+    color:var(--text);
+    text-decoration:none;
+    word-break:break-all;
+  }
+  .site-scan-url:hover{color:var(--pass);}
+  .site-scan-score{
+    font-family:var(--mono);
+    white-space:nowrap;
+  }
+  .site-scan-issues{
+    color:var(--text-dim);
+    font-size:12.5px;
+  }
+  .site-scan-summary{
+    margin-top:20px;
+    padding-top:16px;
+    border-top:1px solid var(--line);
+  }
+  .site-scan-summary h4{
+    font-size:13px;
+    text-transform:uppercase;
+    letter-spacing:0.06em;
+    color:var(--text-dim);
+    margin:0 0 10px;
+    font-weight:600;
+  }
+  .site-scan-summary li{
+    font-size:13.5px;
+    line-height:1.8;
+  }
+
   footer{
     margin-top:48px;
     font-size:12px;
@@ -269,6 +346,8 @@
     <button type="submit" id="submitBtn">Check</button>
   </form>
 
+  <button type="button" id="siteScanBtn" class="secondary-btn" style="margin-top:10px;">Scan whole site (from sitemap.xml) →</button>
+
   <div class="disclaimer">
     <strong>What this does and doesn't do:</strong> this checks 49 technical
     signals known to affect AI visibility — crawler access, structured data,
@@ -280,6 +359,8 @@
   </div>
 
   <div id="status"></div>
+
+  <div class="site-scan" id="siteScan" style="display:none;"></div>
 
   <div class="report" id="report">
     <div class="overall">
@@ -572,6 +653,119 @@ downloadBtn.addEventListener('click', () => {
   link.download = `geo-checker-${safeName}.txt`;
   link.click();
   URL.revokeObjectURL(link.href);
+});
+
+// ---------- Scan whole site (from sitemap.xml) ----------
+const siteScanBtn = document.getElementById('siteScanBtn');
+const siteScanDiv = document.getElementById('siteScan');
+const MAX_SITE_PAGES = 10;
+
+function computeScore(data) {
+  if (!data || data.fetchError || data.error || !data.categories) return null;
+  const cats = data.categories;
+  let totalPass = 0, totalChecks = 0;
+  const fails = [];
+  Object.keys(cats).forEach((catKey) => {
+    const checks = cats[catKey];
+    Object.keys(checks).forEach((k) => {
+      const c = checks[k];
+      totalChecks++;
+      if (c.pass) totalPass++;
+      else {
+        const label = LABELS[k];
+        if (label) fails.push({ name: label.name, priority: label.priority });
+      }
+    });
+  });
+  fails.sort((a, b) => a.priority.localeCompare(b.priority));
+  return { totalPass, totalChecks, fails };
+}
+
+siteScanBtn.addEventListener('click', async () => {
+  const url = input.value.trim();
+  if (!url) { input.focus(); return; }
+
+  siteScanBtn.disabled = true;
+  siteScanDiv.style.display = 'block';
+  siteScanDiv.innerHTML = '<div class="site-scan-status">Fetching sitemap.xml...</div>';
+  report.classList.remove('visible');
+
+  try {
+    const smRes = await fetch('/api/sitemap?url=' + encodeURIComponent(url), { cache: 'no-store' });
+    const smData = await smRes.json();
+
+    if (smData.error || !smData.urls || smData.urls.length === 0) {
+      siteScanDiv.innerHTML = `<div class="site-scan-status" style="color:var(--fail)">${escapeHtml(smData.error || 'No URLs found in sitemap.')}</div>`;
+      siteScanBtn.disabled = false;
+      return;
+    }
+
+    const pagesToScan = smData.urls.slice(0, MAX_SITE_PAGES);
+    const totalFound = smData.total || smData.urls.length;
+
+    siteScanDiv.innerHTML = `
+      <div class="site-scan-status" id="siteScanStatus">Found ${totalFound} URLs in sitemap. Scanning ${pagesToScan.length}...</div>
+      <div class="site-scan-bar-track"><div class="site-scan-bar-fill" id="siteScanBar" style="width:0%"></div></div>
+    `;
+    const statusEl = document.getElementById('siteScanStatus');
+    const barEl = document.getElementById('siteScanBar');
+
+    const results = [];
+    for (let i = 0; i < pagesToScan.length; i++) {
+      const pageUrl = pagesToScan[i];
+      statusEl.textContent = `Scanning ${i + 1} of ${pagesToScan.length}: ${pageUrl}`;
+      try {
+        const r = await fetch('/api/audit?url=' + encodeURIComponent(pageUrl), { cache: 'no-store' });
+        const d = await r.json();
+        results.push({ url: pageUrl, score: computeScore(d), fetchError: d.fetchError || d.error || null });
+      } catch {
+        results.push({ url: pageUrl, score: null, fetchError: 'Could not reach this page.' });
+      }
+      barEl.style.width = `${Math.round(((i + 1) / pagesToScan.length) * 100)}%`;
+    }
+
+    const rows = results.map((r) => {
+      if (!r.score) {
+        return `<tr><td><a class="site-scan-url" href="${r.url}" target="_blank" rel="noopener">${escapeHtml(r.url)}</a></td><td class="site-scan-score" style="color:var(--fail)">—</td><td class="site-scan-issues">${escapeHtml(r.fetchError || 'Could not scan.')}</td></tr>`;
+      }
+      const pct = Math.round((r.score.totalPass / r.score.totalChecks) * 100);
+      const color = pct >= 80 ? 'var(--pass)' : (pct >= 50 ? '#f2a541' : 'var(--fail)');
+      const topIssues = r.score.fails.slice(0, 3).map((f) => f.name).join(', ') || 'None';
+      return `<tr><td><a class="site-scan-url" href="${r.url}" target="_blank" rel="noopener">${escapeHtml(r.url)}</a></td><td class="site-scan-score" style="color:${color}">${r.score.totalPass}/${r.score.totalChecks}</td><td class="site-scan-issues">${escapeHtml(topIssues)}</td></tr>`;
+    }).join('');
+
+    const failCounts = {};
+    results.forEach((r) => {
+      if (r.score) {
+        r.score.fails.forEach((f) => {
+          failCounts[f.name] = (failCounts[f.name] || 0) + 1;
+        });
+      }
+    });
+    const commonFails = Object.entries(failCounts).sort((a, b) => b[1] - a[1]).slice(0, 5);
+    const validResults = results.filter((r) => r.score);
+    const avgScore = validResults.length
+      ? Math.round((validResults.reduce((sum, r) => sum + (r.score.totalPass / r.score.totalChecks), 0) / validResults.length) * 100)
+      : null;
+
+    siteScanDiv.innerHTML = `
+      <div class="site-scan-status">Scanned ${results.length} of ${totalFound} pages found in sitemap.xml${totalFound > pagesToScan.length ? ` (capped at ${MAX_SITE_PAGES})` : ''}.${avgScore !== null ? ` Average score: ${avgScore}%.` : ''}</div>
+      <table class="site-scan-table">
+        <thead><tr><th>Page</th><th>Score</th><th>Top issues</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+      ${commonFails.length ? `
+        <div class="site-scan-summary">
+          <h4>Most common issues across scanned pages</h4>
+          <ul>${commonFails.map(([name, count]) => `<li>${escapeHtml(name)} — found on ${count}/${validResults.length} pages</li>`).join('')}</ul>
+        </div>
+      ` : ''}
+    `;
+  } catch (err) {
+    siteScanDiv.innerHTML = '<div class="site-scan-status" style="color:var(--fail)">Something went wrong scanning the site. Try again in a moment.</div>';
+  } finally {
+    siteScanBtn.disabled = false;
+  }
 });
 </script>
 </body>
