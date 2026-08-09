@@ -356,6 +356,7 @@ export default async function handler(req, res) {
         permissionsPolicy: { pass: !!permissionsPolicy, value: permissionsPolicy || null },
         hsts: { pass: !!hsts, value: hsts || null },
         csp: { pass: !!csp, value: csp || null },
+      },
     },
   });
 }
