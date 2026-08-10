@@ -262,9 +262,15 @@ export default async function handler(req, res) {
 
   // ---------- internal linking & crawlability ----------
   const hrefMatches = [...html.matchAll(/<a\b[^>]*href=["']([^"']+)["'][^>]*>/gi)].map((m) => m[1]);
-  const staticInternalLinks = hrefMatches.filter((h) =>
-    h.startsWith('/') || h.startsWith(origin) || h.startsWith('#')
-  );
+  const staticInternalLinks = hrefMatches.filter((h) => {
+    const lower = h.toLowerCase();
+    if (lower.startsWith('mailto:') || lower.startsWith('tel:') || lower.startsWith('javascript:')) return false;
+    if (h.startsWith('/') || h.startsWith(origin) || h.startsWith('#')) return true;
+    // relative links with no leading slash (e.g. "page.html") are internal too,
+    // as long as they aren't pointing to a different http(s) origin
+    if (!/^https?:\/\//i.test(h)) return true;
+    return false;
+  });
   const hasNavElement = /<nav[\s>]/i.test(html);
   const hasNoscript = /<noscript[\s>][\s\S]*?<\/noscript>/i.test(html);
   const noscriptHasLinks = hasNoscript ? /<noscript[\s>][\s\S]*?<a\b[^>]*href=[\s\S]*?<\/noscript>/i.test(html) : false;
