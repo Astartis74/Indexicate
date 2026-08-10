@@ -31,7 +31,7 @@
 }
 </script>
 <link rel="canonical" href="https://indexicate.com/geo-checker-v3.html">
-<meta name="description" content="Free GEO Checker — 49 real technical checks for AI visibility: crawler access, structured data, content structure, metadata and security headers.">
+<meta name="description" content="Free GEO Checker — 54 real technical checks for AI visibility: crawler access, structured data, content structure, metadata and security headers.">
 <style>
   :root{
     --ink:#14171c;
@@ -362,7 +362,7 @@
   <div class="eyebrow">Indexicate / Free Tool</div>
   <h1>Free GEO Checker</h1>
   <p class="lede">
-    Enter a live URL. 49 real, server-side checks against the page and its root
+    Enter a live URL. 54 real, server-side checks against the page and its root
     files — technical foundation, content structure, metadata and security headers. Nothing here is simulated.
   </p>
 
@@ -374,7 +374,7 @@
   <button type="button" id="siteScanBtn" class="secondary-btn" style="margin-top:10px;">Scan whole site (from sitemap.xml) →</button>
 
   <div class="disclaimer">
-    <strong>What this does and doesn't do:</strong> this checks 49 technical
+    <strong>What this does and doesn't do:</strong> this checks 54 technical
     signals known to affect AI visibility — crawler access, structured data,
     content structure, and metadata. It does <strong>not</strong> query
     ChatGPT, Perplexity, or any AI search engine on your behalf — that
@@ -525,6 +525,16 @@ const LABELS = {
     detail: c => c.note + (c.pass ? ' Found.' : ' Not found.') },
   schemaValidJson: { name: 'Structured data validity', priority: 'P1', impact: 'Invalid JSON-LD may be ignored entirely by parsers, silently wasting the effort of adding it.',
     detail: c => c.note || 'All JSON-LD blocks parsed successfully.' },
+  speakableSchema: { name: 'Speakable schema', priority: 'P2', impact: 'Marks which text is suitable for voice assistants to read aloud — relevant for AEO on voice/answer surfaces.',
+    detail: c => c.note || 'Found.' },
+  faqQaQuality: { name: 'FAQ Q&A completeness', priority: 'P1', impact: 'A FAQPage block with empty or malformed questions/answers may be ignored by AI systems even though the schema tag is technically present.',
+    detail: c => c.note || (c.pass ? 'All FAQ questions have real question text and answer text.' : 'FAQPage schema found, but one or more questions/answers are empty or malformed.') },
+  productOfferSchema: { name: 'Product/Offer schema', priority: 'P1', impact: 'Price and availability in a machine-readable Offer let AI agents evaluate and act on your product directly — a core signal for agent-driven (ASO) discovery.',
+    detail: c => c.note || (c.pass ? 'Product schema includes a valid Offer with price and currency.' : 'Product schema found, but missing a complete Offer (price/currency).') },
+  howToSchema: { name: 'HowTo schema', priority: 'P2', impact: 'Structures step-by-step content so AI systems can extract and cite individual steps directly.',
+    detail: c => c.note || 'Found.' },
+  ratingSchema: { name: 'Review/AggregateRating schema', priority: 'P2', impact: 'A structured trust signal AI agents can use when comparing options — relevant for agent-driven (ASO) evaluation.',
+    detail: c => c.note || 'Found.' },
   openGraphTitle: { name: 'og:title', priority: 'P1', impact: 'Controls the title shown when your page is shared or referenced across platforms.',
     detail: c => c.pass ? 'Present.' : 'Missing.' },
   openGraphDescription: { name: 'og:description', priority: 'P1', impact: 'Controls the description shown when your page is shared or referenced.',

@@ -287,6 +287,31 @@ export default async function handler(req, res) {
   const orgHasId = orgItems.some((o) => typeof o['@id'] === 'string' && o['@id'].length > 0);
   const orgHasName = orgItems.some((o) => typeof o.name === 'string' && o.name.length > 0);
 
+  // ---------- AEO / ASO signals ----------
+  const speakableItems = ldItems.filter((it) => it.speakable);
+  const hasSpeakable = speakableItems.length > 0;
+
+  const faqMainEntities = faqItems.flatMap((f) => Array.isArray(f.mainEntity) ? f.mainEntity : (f.mainEntity ? [f.mainEntity] : []));
+  const faqQaComplete = faqItems.length === 0 ? null : faqMainEntities.length > 0 && faqMainEntities.every((q) =>
+    typeof q.name === 'string' && q.name.trim().length > 0 &&
+    q.acceptedAnswer && typeof q.acceptedAnswer.text === 'string' && q.acceptedAnswer.text.trim().length > 0
+  );
+
+  const productItems = findByType(ldItems, 'Product');
+  const productHasOffer = productItems.some((p) => {
+    const offer = p.offers;
+    if (!offer) return false;
+    const offers = Array.isArray(offer) ? offer : [offer];
+    return offers.some((o) => o && o.price !== undefined && o.priceCurrency);
+  });
+
+  const howToItems = findByType(ldItems, 'HowTo');
+  const hasHowTo = howToItems.length > 0;
+
+  const reviewItems = findByType(ldItems, 'Review');
+  const aggregateRatingItems = ldItems.filter((it) => it.aggregateRating) .concat(orgItems.filter((o) => o.aggregateRating)).concat(productItems.filter((p) => p.aggregateRating));
+  const hasRatingSignal = reviewItems.length > 0 || aggregateRatingItems.length > 0;
+
   // ---------- Open Graph, detailed ----------
   const ogTitleMatch = html.match(/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']*)["']/i);
   const ogDescMatch = html.match(/<meta[^>]+property=["']og:description["']/i);
@@ -375,6 +400,11 @@ export default async function handler(req, res) {
         schemaArticle: { pass: articleItems.length > 0, note: 'Only relevant for blog/article pages.' },
         schemaFAQPage: { pass: faqItems.length > 0, note: 'Only relevant for FAQ-style pages.' },
         schemaValidJson: { pass: !hadInvalid, note: hadInvalid ? 'Some JSON-LD blocks failed to parse.' : null },
+        speakableSchema: { pass: true, found: hasSpeakable, note: hasSpeakable ? null : 'Only relevant for voice-assistant / read-aloud use cases.' },
+        faqQaQuality: { pass: faqQaComplete === false ? false : true, note: faqQaComplete === null ? 'No FAQPage schema found to check.' : null },
+        productOfferSchema: { pass: productItems.length > 0 ? productHasOffer : true, note: productItems.length === 0 ? 'Only relevant for product/e-commerce pages.' : null },
+        howToSchema: { pass: true, found: hasHowTo, note: hasHowTo ? null : 'Only relevant for tutorial/how-to pages.' },
+        ratingSchema: { pass: true, found: hasRatingSignal, note: hasRatingSignal ? null : 'Only relevant for pages with reviews or ratings.' },
         openGraphTitle: { pass: !!ogTitleMatch },
         openGraphDescription: { pass: !!ogDescMatch },
         openGraphImage: { pass: !!ogImageMatch && ogImageIsAbsolute, hasTag: !!ogImageMatch, isAbsolute: ogImageIsAbsolute },

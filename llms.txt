@@ -2,7 +2,7 @@
 
 > Indexicate provides AI Visibility Audits (GEO / AEO) — helping businesses understand and improve how ChatGPT, Perplexity, Gemini and Claude discover and cite their website.
 
-Indexicate offers a free technical GEO Checker that runs 20+ real, server-side checks (crawler access, structured data, content structure, and metadata) and paid full audits that include live query testing across ChatGPT, Perplexity, Gemini and Claude.
+Indexicate offers a free technical GEO Checker that runs 54 real, server-side checks (crawler access, structured data, content structure, metadata, and security headers) and paid full audits that include live query testing across ChatGPT, Perplexity, Gemini and Claude.
 
 ## Services
 
