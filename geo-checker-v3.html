@@ -607,7 +607,7 @@ form.addEventListener('submit', async (e) => {
           <div class="check">
             <div class="dot ${c.pass ? 'pass' : 'fail'}"></div>
             <div>
-              <div class="check-name">${label.name} <span class="priority-badge priority-${label.priority}">${label.priority}</span></div>
+              <div class="check-name">${label.name}</div>
               <div class="check-detail">${escapeHtml(detailText)}</div>
               <div class="check-impact">Impact: ${escapeHtml(label.impact)}</div>
               ${confidenceText ? `<div class="check-confidence">Confidence: ${escapeHtml(confidenceText)}</div>` : ''}
@@ -633,7 +633,7 @@ form.addEventListener('submit', async (e) => {
     if (failedItems.length) {
       priorityBox.style.display = 'block';
       const sortedFails = [...failedItems].sort((a, b) => a.priority.localeCompare(b.priority));
-      priorityList.innerHTML = sortedFails.map(item => `<li><span class="priority-badge priority-${item.priority}">${item.priority}</span> ${escapeHtml(item.name)}</li>`).join('');
+      priorityList.innerHTML = sortedFails.map(item => `<li>${escapeHtml(item.name)}</li>`).join('');
     } else {
       priorityBox.style.display = 'none';
     }
@@ -796,7 +796,7 @@ siteScanBtn.addEventListener('click', async () => {
       ${commonFails.length ? `
         <div class="site-scan-summary">
           <h4>Most common issues across scanned pages — sorted by priority</h4>
-          <ul>${commonFails.map(([name, count]) => `<li><span class="priority-badge priority-${failPriority[name]}">${failPriority[name]}</span> ${escapeHtml(name)} — found on ${count}/${validResults.length} pages</li>`).join('')}</ul>
+          <ul>${commonFails.map(([name, count]) => `<li>${escapeHtml(name)} — found on ${count}/${validResults.length} pages</li>`).join('')}</ul>
         </div>
       ` : ''}
     `;
