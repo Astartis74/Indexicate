@@ -73,16 +73,22 @@ function extractJsonLdBlocks(html) {
   )];
   const parsed = [];
   let hadInvalid = false;
+  let blockCount = 0;
+  let contextIssues = 0;
   for (const block of blocks) {
     try {
       const data = JSON.parse(block[1].trim());
+      blockCount++;
+      const ctx = data['@context'];
+      const ctxStr = Array.isArray(ctx) ? ctx.join(' ') : (typeof ctx === 'string' ? ctx : '');
+      if (!ctxStr || !ctxStr.includes('schema.org')) contextIssues++;
       const items = Array.isArray(data) ? data : [data];
       for (const item of items) flattenGraph(item, parsed);
     } catch {
       hadInvalid = true;
     }
   }
-  return { items: parsed, hadInvalid };
+  return { items: parsed, hadInvalid, blockCount, contextIssues };
 }
 
 function flattenGraph(item, out) {
@@ -196,6 +202,7 @@ export default async function handler(req, res) {
   const robotsOk = !!(robotsRes && robotsRes.ok);
   const robotsText = robotsOk ? await robotsRes.text().catch(() => '') : '';
   const robotsGroups = robotsOk ? parseRobotsGroups(robotsText) : [];
+  const sitemapDeclaredInRobots = robotsOk ? /sitemap:/i.test(robotsText) : null;
   const botStatus = {};
   for (const bot of AI_BOTS) {
     botStatus[bot] = robotsOk ? isBotBlocked(robotsGroups, bot) : { blocked: false, matchedGroup: 'none' };
@@ -233,6 +240,7 @@ export default async function handler(req, res) {
     /<meta[^>]+content=["']([\s\S]*?)["'][^>]+name=["']description["'][^>]*>/i
   );
   const metaDescription = metaDescMatch ? metaDescMatch[1].trim() : null;
+  const titleEqualsDescription = !!(title && metaDescription && title.trim().toLowerCase() === metaDescription.trim().toLowerCase());
 
   // ---------- H1 ----------
   const h1Count = countMatches(html, /<h1[\s>]/gi);
@@ -249,6 +257,11 @@ export default async function handler(req, res) {
     || html.match(/<link[^>]+href=["']([^"']+)["'][^>]+rel=["']canonical["']/i);
   const canonicalUrl = canonicalMatch ? canonicalMatch[1] : null;
   const canonicalMatchesServed = canonicalUrl ? (canonicalUrl.replace(/\/$/, '') === targetUrl.replace(/\/$/, '')) : null;
+  const canonicalTagCount = countMatches(html, /<link[^>]+rel=["']canonical["']/gi);
+  const hasDuplicateCanonical = canonicalTagCount > 1;
+
+  const contentEncoding = pageRes.headers.get('content-encoding') || '';
+  const hasCompression = /gzip|br|deflate/i.test(contentEncoding);
 
   // ---------- text-to-html ratio / content depth / alt text ----------
   const visibleText = stripTags(html);
@@ -276,12 +289,13 @@ export default async function handler(req, res) {
   const noscriptHasLinks = hasNoscript ? /<noscript[\s>][\s\S]*?<a\b[^>]*href=[\s\S]*?<\/noscript>/i.test(html) : false;
 
   // ---------- structured data, granular ----------
-  const { items: ldItems, hadInvalid } = extractJsonLdBlocks(html);
+  const { items: ldItems, hadInvalid, blockCount, contextIssues } = extractJsonLdBlocks(html);
   const websiteItems = findByType(ldItems, 'WebSite');
   const orgItems = findByType(ldItems, 'Organization').concat(findByType(ldItems, 'LocalBusiness'));
   const personItems = findByType(ldItems, 'Person');
   const articleItems = findByType(ldItems, 'Article').concat(findByType(ldItems, 'BlogPosting'));
   const faqItems = findByType(ldItems, 'FAQPage');
+  const breadcrumbItems = findByType(ldItems, 'BreadcrumbList');
 
   const orgHasSameAs = orgItems.some((o) => Array.isArray(o.sameAs) && o.sameAs.length > 0);
   const orgHasId = orgItems.some((o) => typeof o['@id'] === 'string' && o['@id'].length > 0);
@@ -370,6 +384,8 @@ export default async function handler(req, res) {
         hreflang: { pass: true, values: hreflangValues, note: hreflangValues.length === 0 ? 'No hreflang tags found — only relevant for multi-language sites.' : null },
         urlStructure: { pass: urlStructureIssues.length === 0, issues: urlStructureIssues },
         notFoundHandling: { pass: notFoundIsProper4xx, status: notFoundStatus, note: notFoundStatus === null ? 'Could not reach a test URL to check 404 behavior.' : null },
+        sitemapDeclaredInRobots: { pass: sitemapDeclaredInRobots !== false, note: sitemapDeclaredInRobots === null ? 'No robots.txt found to check.' : null },
+        responseCompression: { pass: hasCompression, value: contentEncoding || null },
       },
       content: {
         title: {
@@ -384,6 +400,8 @@ export default async function handler(req, res) {
         htmlLang: { pass: !!htmlLang, value: htmlLang },
         canonical: { pass: !!canonicalUrl, value: canonicalUrl },
         canonicalMatchesServed: { pass: canonicalMatchesServed !== false, note: !canonicalUrl ? 'No canonical tag to compare.' : null, value: canonicalUrl },
+        duplicateCanonical: { pass: !hasDuplicateCanonical, count: canonicalTagCount },
+        titleEqualsDescription: { pass: !titleEqualsDescription, note: (!title || !metaDescription) ? 'Title or meta description missing — cannot compare.' : null },
         textToHtmlRatio: { pass: textToHtmlRatio >= 15 || wordCount >= 300, value: Math.round(textToHtmlRatio * 10) / 10, wordCount },
         contentDepth: { pass: wordCount >= 300, wordCount },
         altText: {
@@ -400,6 +418,8 @@ export default async function handler(req, res) {
         schemaArticle: { pass: articleItems.length > 0, note: 'Only relevant for blog/article pages.' },
         schemaFAQPage: { pass: faqItems.length > 0, note: 'Only relevant for FAQ-style pages.' },
         schemaValidJson: { pass: !hadInvalid, note: hadInvalid ? 'Some JSON-LD blocks failed to parse.' : null },
+        breadcrumbSchema: { pass: true, found: breadcrumbItems.length > 0, note: breadcrumbItems.length > 0 ? null : 'Only relevant for pages with a clear navigation hierarchy.' },
+        jsonLdContextValid: { pass: blockCount === 0 || contextIssues === 0, note: blockCount === 0 ? 'No JSON-LD blocks found to check.' : (contextIssues > 0 ? `${contextIssues} of ${blockCount} JSON-LD block(s) missing or have an invalid @context.` : null) },
         speakableSchema: { pass: true, found: hasSpeakable, note: hasSpeakable ? null : 'Only relevant for voice-assistant / read-aloud use cases.' },
         faqQaQuality: { pass: faqQaComplete === false ? false : true, note: faqQaComplete === null ? 'No FAQPage schema found to check.' : null },
         productOfferSchema: { pass: productItems.length > 0 ? productHasOffer : true, note: productItems.length === 0 ? 'Only relevant for product/e-commerce pages.' : null },

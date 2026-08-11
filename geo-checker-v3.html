@@ -31,7 +31,7 @@
 }
 </script>
 <link rel="canonical" href="https://indexicate.com/geo-checker-v3.html">
-<meta name="description" content="Free GEO Checker — 54 real technical checks for AI visibility: crawler access, structured data, content structure, metadata and security headers.">
+<meta name="description" content="Free GEO Checker — 60 real technical checks for AI visibility: crawler access, structured data, content structure, metadata and security headers.">
 <style>
   :root{
     --ink:#14171c;
@@ -362,7 +362,7 @@
   <div class="eyebrow">Indexicate / Free Tool</div>
   <h1>Free GEO Checker</h1>
   <p class="lede">
-    Enter a live URL. 54 real, server-side checks against the page and its root
+    Enter a live URL. 60 real, server-side checks against the page and its root
     files — technical foundation, content structure, metadata and security headers. Nothing here is simulated.
   </p>
 
@@ -374,7 +374,7 @@
   <button type="button" id="siteScanBtn" class="secondary-btn" style="margin-top:10px;">Scan whole site (from sitemap.xml) →</button>
 
   <div class="disclaimer">
-    <strong>What this does and doesn't do:</strong> this checks 54 technical
+    <strong>What this does and doesn't do:</strong> this checks 60 technical
     signals known to affect AI visibility — crawler access, structured data,
     content structure, and metadata. It does <strong>not</strong> query
     ChatGPT, Perplexity, or any AI search engine on your behalf — that
@@ -489,6 +489,10 @@ const LABELS = {
     detail: c => c.issues && c.issues.length ? `Issues: ${c.issues.join(', ')}` : 'Clean URL structure.' },
   notFoundHandling: { name: '404 handling', priority: 'P1', impact: 'If a nonexistent page returns 200 instead of 404 ("soft 404"), crawlers can\'t tell real pages from missing ones, which wastes crawl budget and can dilute how your site is indexed.',
     detail: c => c.note || (c.pass ? `Returns a proper ${c.status} for a nonexistent page.` : `Returned ${c.status} for a nonexistent page — should be a 4xx status.`) },
+  sitemapDeclaredInRobots: { name: 'Sitemap declared in robots.txt', priority: 'P2', impact: 'A "Sitemap:" line in robots.txt helps crawlers discover your sitemap without guessing the path.',
+    detail: c => c.note || (c.pass ? 'Sitemap declared in robots.txt.' : 'robots.txt exists but does not declare a Sitemap: line.') },
+  responseCompression: { name: 'Response compression', priority: 'P2', impact: 'Gzip/Brotli compression reduces page weight, which can speed up crawling and rendering — a performance signal, not a direct GEO one.',
+    detail: c => c.value ? `Enabled: "${c.value}"` : 'Not enabled — response is served uncompressed.' },
 
   title: { name: 'Title tag', priority: 'P0', impact: 'Often the first thing an AI model reads to understand what the page is about.',
     detail: c => c.value ? `"${c.value}" (${c.length} characters)` : 'No title tag found.' },
@@ -502,6 +506,10 @@ const LABELS = {
     detail: c => c.value ? `Points to ${c.value}` : 'No canonical tag found — risk of duplicate-content confusion.' },
   canonicalMatchesServed: { name: 'Canonical matches served URL', priority: 'P0', impact: 'A mismatch (e.g. canonical says www, but the page is served without www) actively confuses crawlers about which URL is authoritative.',
     detail: c => c.note || (c.pass ? 'Canonical URL matches the URL served.' : 'Canonical URL does not match the URL served — check www/non-www or trailing slash.') },
+  duplicateCanonical: { name: 'No duplicate canonical tags', priority: 'P1', impact: 'Multiple canonical tags on one page create ambiguity — browsers and crawlers only reliably honor the first one, so extras can cause unpredictable behavior.',
+    detail: c => c.count <= 1 ? `Exactly ${c.count} canonical tag found.` : `${c.count} canonical tags found — should be exactly 1.` },
+  titleEqualsDescription: { name: 'Title and description not identical', priority: 'P2', impact: 'When the meta description just repeats the title, it wastes a chance to give crawlers extra context about the page.',
+    detail: c => c.note || (c.pass ? 'Title and meta description are different.' : 'Title and meta description are identical.') },
   textToHtmlRatio: { name: 'Text-to-HTML ratio', priority: 'P0', impact: 'A genuinely low ratio combined with low extracted word count can mean content is rendered by JavaScript that AI crawlers cannot execute. A low ratio alone, with healthy word count, usually just means bloated markup/scripts — not hidden content.',
     detail: c => {
       if (c.value >= 15) return `${c.value}% visible text — healthy ratio.`;
@@ -527,6 +535,10 @@ const LABELS = {
     detail: c => c.note + (c.pass ? ' Found.' : ' Not found.') },
   schemaValidJson: { name: 'Structured data validity', priority: 'P1', impact: 'Invalid JSON-LD may be ignored entirely by parsers, silently wasting the effort of adding it.',
     detail: c => c.note || 'All JSON-LD blocks parsed successfully.' },
+  breadcrumbSchema: { name: 'Schema: BreadcrumbList', priority: 'P2', impact: 'Gives AI systems a structured view of where this page sits in your site — useful context for citation and navigation.',
+    detail: c => c.note || 'Found.' },
+  jsonLdContextValid: { name: 'JSON-LD @context correctness', priority: 'P1', impact: 'A missing or malformed @context means parsers may not recognize your JSON-LD as Schema.org data at all, even if the rest of the block is well-formed.',
+    detail: c => c.note || 'All JSON-LD blocks declare a valid schema.org @context.' },
   speakableSchema: { name: 'Speakable schema', priority: 'P2', impact: 'Marks which text is suitable for voice assistants to read aloud — relevant for AEO on voice/answer surfaces.',
     detail: c => c.note || 'Found.' },
   faqQaQuality: { name: 'FAQ Q&A completeness', priority: 'P1', impact: 'A FAQPage block with empty or malformed questions/answers may be ignored by AI systems even though the schema tag is technically present.',
