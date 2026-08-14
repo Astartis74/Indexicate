@@ -180,6 +180,7 @@ export default async function handler(req, res) {
 
   const httpsOk = targetUrl.startsWith('https://');
   const html = await pageRes.text().catch(() => '');
+  const structuralHtml = html.replace(/<script[\s\S]*?<\/script>/gi, ' ');
   const htmlSize = Buffer.byteLength(html, 'utf8');
 
   const xContentTypeOptions = (pageRes.headers.get('x-content-type-options') || '').toLowerCase();
@@ -243,8 +244,8 @@ export default async function handler(req, res) {
   const titleEqualsDescription = !!(title && metaDescription && title.trim().toLowerCase() === metaDescription.trim().toLowerCase());
 
   // ---------- H1 ----------
-  const h1Count = countMatches(html, /<h1[\s>]/gi);
-  const h1Raw = extractTag(html, /<h1[^>]*>([\s\S]*?)<\/h1>/i);
+  const h1Count = countMatches(structuralHtml, /<h1[\s>]/gi);
+  const h1Raw = extractTag(structuralHtml, /<h1[^>]*>([\s\S]*?)<\/h1>/i);
   const h1Text = h1Raw
     ? h1Raw.replace(/<br\s*\/?>/gi, ' ').replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim()
     : null;
@@ -253,11 +254,11 @@ export default async function handler(req, res) {
   const langMatch = html.match(/<html[^>]+lang=["']([a-zA-Z-]+)["']/i);
   const htmlLang = langMatch ? langMatch[1] : null;
 
-  const canonicalMatch = html.match(/<link[^>]+rel=["']canonical["'][^>]+href=["']([^"']+)["']/i)
+  const canonicalMatch = structuralHtml.match(/<link[^>]+rel=["']canonical["'][^>]+href=["']([^"']+)["']/i)
     || html.match(/<link[^>]+href=["']([^"']+)["'][^>]+rel=["']canonical["']/i);
   const canonicalUrl = canonicalMatch ? canonicalMatch[1] : null;
   const canonicalMatchesServed = canonicalUrl ? (canonicalUrl.replace(/\/$/, '') === targetUrl.replace(/\/$/, '')) : null;
-  const canonicalTagCount = countMatches(html, /<link[^>]+rel=["']canonical["']/gi);
+  const canonicalTagCount = countMatches(structuralHtml, /<link[^>]+rel=["']canonical["']/gi);
   const hasDuplicateCanonical = canonicalTagCount > 1;
 
   const contentEncoding = pageRes.headers.get('content-encoding') || '';
@@ -274,7 +275,7 @@ export default async function handler(req, res) {
   const altRatio = imgTags.length > 0 ? imagesWithAlt / imgTags.length : null;
 
   // ---------- internal linking & crawlability ----------
-  const hrefMatches = [...html.matchAll(/<a\b[^>]*href=["']([^"']+)["'][^>]*>/gi)].map((m) => m[1]);
+  const hrefMatches = [...structuralHtml.matchAll(/<a\b[^>]*href=["']([^"']+)["'][^>]*>/gi)].map((m) => m[1]);
   const staticInternalLinks = hrefMatches.filter((h) => {
     const lower = h.toLowerCase();
     if (lower.startsWith('mailto:') || lower.startsWith('tel:') || lower.startsWith('javascript:')) return false;
