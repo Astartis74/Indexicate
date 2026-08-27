@@ -10,6 +10,7 @@
 // certainty.
 
 import { fetchPublicResource, normalizeUserUrl, UnsafeUrlError, validatePublicUrl } from './_safe-fetch.js';
+import { enforceRateLimit } from './_rate-limit.js';
 
 export const config = {
   runtime: 'nodejs',
@@ -136,7 +137,8 @@ function isBotBlocked(groups, botName) {
   return { blocked: blockedAll, matchedGroup: specific ? botName : '*' };
 }
 
-export default async function handler(req, res) {
+export function createAuditHandler({ rateLimitGuard = enforceRateLimit } = {}) {
+  return async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   res.setHeader('Cache-Control', 'no-store, max-age=0');
@@ -145,6 +147,7 @@ export default async function handler(req, res) {
     res.setHeader('Allow', 'GET, OPTIONS');
     return res.status(405).json({ error: 'Method not allowed.' });
   }
+  if (!await rateLimitGuard(req, res, 'audit')) return;
 
   const rawUrl = req.query?.url;
   if (!rawUrl) {
@@ -439,4 +442,7 @@ export default async function handler(req, res) {
       },
     },
   });
+  };
 }
+
+export default createAuditHandler();

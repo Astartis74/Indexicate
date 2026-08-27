@@ -1,8 +1,11 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import auditHandler from '../api/audit.js';
-import sitemapHandler from '../api/sitemap.js';
+import auditHandler, { createAuditHandler } from '../api/audit.js';
+import sitemapHandler, { createSitemapHandler } from '../api/sitemap.js';
+
+process.env.NODE_ENV = 'test';
+process.env.RATE_LIMIT_TEST_BYPASS = 'true';
 
 function createResponse() {
   return {
@@ -29,9 +32,9 @@ function createResponse() {
   };
 }
 
-for (const [name, handler] of [
-  ['audit', auditHandler],
-  ['sitemap', sitemapHandler],
+for (const [name, handler, createHandler, scope] of [
+  ['audit', auditHandler, createAuditHandler, 'audit'],
+  ['sitemap', sitemapHandler, createSitemapHandler, 'sitemap'],
 ]) {
   test(`${name} rejects non-GET methods`, async () => {
     const response = createResponse();
@@ -48,5 +51,22 @@ for (const [name, handler] of [
 
     assert.equal(response.statusCode, 400);
     assert.match(response.payload.error, /public HTTP\(S\)/);
+  });
+
+  test(`${name} returns 429 before target validation or outbound fetch`, async () => {
+    const guardCalls = [];
+    const rateLimitedHandler = createHandler({
+      rateLimitGuard: async (_req, response, receivedScope) => {
+        guardCalls.push(receivedScope);
+        response.status(429).json({ error: 'Too many requests. Please retry later.' });
+        return false;
+      },
+    });
+    const response = createResponse();
+    await rateLimitedHandler({ method: 'GET', query: { url: 'http://127.0.0.1/' } }, response);
+
+    assert.deepEqual(guardCalls, [scope]);
+    assert.equal(response.statusCode, 429);
+    assert.deepEqual(response.payload, { error: 'Too many requests. Please retry later.' });
   });
 }
