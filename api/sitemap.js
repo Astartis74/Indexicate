@@ -2,25 +2,21 @@
 // Fetches /sitemap.xml for a domain and returns the list of URLs found.
 // Handles both plain sitemaps and one level of sitemap index nesting.
 
+import { fetchPublicResource, normalizeUserUrl, UnsafeUrlError, validatePublicUrl } from './_safe-fetch.js';
+
 export const config = {
   runtime: 'nodejs',
 };
 
 const TIMEOUT_MS = 8000;
 
-function withTimeout(promise, ms) {
-  const timeout = new Promise((_, reject) =>
-    setTimeout(() => reject(new Error('timeout')), ms)
-  );
-  return Promise.race([promise, timeout]);
-}
-
 async function safeFetch(url, timeout = TIMEOUT_MS) {
   try {
-    return await withTimeout(
-      fetch(url, { headers: { 'User-Agent': 'IndexicateGEOAudit/1.0 (+https://indexicate.com)' } }),
-      timeout
-    );
+    return await fetchPublicResource(url, {
+      timeoutMs: timeout,
+      maxBytes: 1024 * 1024,
+      headers: { 'User-Agent': 'IndexicateGEOAudit/1.0 (+https://indexicate.com)' },
+    });
   } catch {
     return null;
   }
@@ -32,7 +28,13 @@ function extractLocs(xml) {
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   res.setHeader('Cache-Control', 'no-store, max-age=0');
+  if (req.method === 'OPTIONS') return res.status(204).end();
+  if (req.method !== 'GET') {
+    res.setHeader('Allow', 'GET, OPTIONS');
+    return res.status(405).json({ error: 'Method not allowed.' });
+  }
 
   const rawUrl = req.query?.url;
   if (!rawUrl) {
@@ -40,14 +42,15 @@ export default async function handler(req, res) {
     return;
   }
 
-  let target = rawUrl.trim();
-  if (!/^https?:\/\//i.test(target)) target = 'https://' + target;
+  let target;
   let origin;
   try {
+    target = normalizeUserUrl(rawUrl);
+    await validatePublicUrl(target);
     origin = new URL(target).origin;
-  } catch {
-    res.status(400).json({ error: 'Invalid URL.' });
-    return;
+  } catch (error) {
+    const message = error instanceof UnsafeUrlError ? error.message : 'Invalid URL.';
+    return res.status(400).json({ error: message });
   }
 
   const sitemapRes = await safeFetch(origin + '/sitemap.xml');
