@@ -9,6 +9,8 @@
 // a result is ambiguous, the "note" field says so instead of implying
 // certainty.
 
+import { fetchPublicResource, normalizeUserUrl, UnsafeUrlError, validatePublicUrl } from './_safe-fetch.js';
+
 export const config = {
   runtime: 'nodejs',
 };
@@ -18,32 +20,20 @@ const MEDIUM_TIMEOUT_MS = 5000;
 const SHORT_TIMEOUT_MS = 3000;
 const AI_BOTS = ['GPTBot', 'ChatGPT-User', 'OAI-SearchBot', 'ClaudeBot', 'PerplexityBot', 'Google-Extended'];
 
-function withTimeout(promise, ms) {
-  const timeout = new Promise((_, reject) =>
-    setTimeout(() => reject(new Error('timeout')), ms)
-  );
-  return Promise.race([promise, timeout]);
-}
-
 async function safeFetch(url, options = {}, timeout = TIMEOUT_MS) {
   try {
-    return await withTimeout(
-      fetch(url, {
-        redirect: 'follow',
-        headers: { 'User-Agent': 'IndexicateGEOAudit/1.0 (+https://indexicate.com)' },
-        ...options,
-      }),
-      timeout
-    );
+    return await fetchPublicResource(url, {
+      ...options,
+      timeoutMs: timeout,
+      maxBytes: options.method === 'HEAD' ? 0 : 2 * 1024 * 1024,
+      headers: {
+        'User-Agent': 'IndexicateGEOAudit/1.0 (+https://indexicate.com)',
+        ...(options.headers || {}),
+      },
+    });
   } catch {
     return null;
   }
-}
-
-function normalizeUrl(raw) {
-  let url = raw.trim();
-  if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
-  return url;
 }
 
 function extractTag(html, regex) {
@@ -150,7 +140,11 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   res.setHeader('Cache-Control', 'no-store, max-age=0');
-  if (req.method === 'OPTIONS') return res.status(200).end();
+  if (req.method === 'OPTIONS') return res.status(204).end();
+  if (req.method !== 'GET') {
+    res.setHeader('Allow', 'GET, OPTIONS');
+    return res.status(405).json({ error: 'Method not allowed.' });
+  }
 
   const rawUrl = req.query?.url;
   if (!rawUrl) {
@@ -160,14 +154,12 @@ export default async function handler(req, res) {
 
   let targetUrl;
   try {
-    targetUrl = normalizeUrl(rawUrl);
-    new URL(targetUrl);
-  } catch {
-    res.status(400).json({ error: 'Invalid URL.' });
-    return;
+    targetUrl = normalizeUserUrl(rawUrl);
+    await validatePublicUrl(targetUrl);
+  } catch (error) {
+    const message = error instanceof UnsafeUrlError ? error.message : 'Invalid URL.';
+    return res.status(400).json({ error: message });
   }
-
-  const origin = new URL(targetUrl).origin;
 
   const pageRes = await safeFetch(targetUrl);
   if (!pageRes) {
@@ -178,7 +170,9 @@ export default async function handler(req, res) {
     return;
   }
 
-  const httpsOk = targetUrl.startsWith('https://');
+  const servedUrl = pageRes.url || targetUrl;
+  const origin = new URL(servedUrl).origin;
+  const httpsOk = servedUrl.startsWith('https://');
   const html = await pageRes.text().catch(() => '');
   const structuralHtml = html.replace(/<script[\s\S]*?<\/script>/gi, ' ');
   const htmlSize = Buffer.byteLength(html, 'utf8');
@@ -257,7 +251,7 @@ export default async function handler(req, res) {
   const canonicalMatch = structuralHtml.match(/<link[^>]+rel=["']canonical["'][^>]+href=["']([^"']+)["']/i)
     || html.match(/<link[^>]+href=["']([^"']+)["'][^>]+rel=["']canonical["']/i);
   const canonicalUrl = canonicalMatch ? canonicalMatch[1] : null;
-  const canonicalMatchesServed = canonicalUrl ? (canonicalUrl.replace(/\/$/, '') === targetUrl.replace(/\/$/, '')) : null;
+  const canonicalMatchesServed = canonicalUrl ? (canonicalUrl.replace(/\/$/, '') === servedUrl.replace(/\/$/, '')) : null;
   const canonicalTagCount = countMatches(structuralHtml, /<link[^>]+rel=["']canonical["']/gi);
   const hasDuplicateCanonical = canonicalTagCount > 1;
 
@@ -363,7 +357,7 @@ export default async function handler(req, res) {
   if (urlParamCount > 2) urlStructureIssues.push(`has ${urlParamCount} query parameters`);
 
   res.status(200).json({
-    url: targetUrl,
+    url: servedUrl,
     categories: {
       foundation: {
         https: { pass: httpsOk },
