@@ -3,6 +3,7 @@
 // Handles both plain sitemaps and one level of sitemap index nesting.
 
 import { fetchPublicResource, normalizeUserUrl, UnsafeUrlError, validatePublicUrl } from './_safe-fetch.js';
+import { enforceRateLimit } from './_rate-limit.js';
 
 export const config = {
   runtime: 'nodejs',
@@ -26,7 +27,8 @@ function extractLocs(xml) {
   return [...xml.matchAll(/<loc>([^<]+)<\/loc>/gi)].map((m) => m[1].trim());
 }
 
-export default async function handler(req, res) {
+export function createSitemapHandler({ rateLimitGuard = enforceRateLimit } = {}) {
+  return async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   res.setHeader('Cache-Control', 'no-store, max-age=0');
@@ -35,6 +37,7 @@ export default async function handler(req, res) {
     res.setHeader('Allow', 'GET, OPTIONS');
     return res.status(405).json({ error: 'Method not allowed.' });
   }
+  if (!await rateLimitGuard(req, res, 'sitemap')) return;
 
   const rawUrl = req.query?.url;
   if (!rawUrl) {
@@ -82,4 +85,7 @@ export default async function handler(req, res) {
     total: urls.length,
     isIndex,
   });
+  };
 }
+
+export default createSitemapHandler();

@@ -7,6 +7,8 @@
     "test": "node --test"
   },
   "dependencies": {
+    "@upstash/ratelimit": "2.0.8",
+    "@upstash/redis": "1.38.3",
     "ipaddr.js": "^2.5.0",
     "undici": "^6.28.0"
   }
