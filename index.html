@@ -624,6 +624,25 @@ footer {
   gap: 16px;
 }
 
+.footer-links {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.footer-links a {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-dim);
+  text-decoration: none;
+  letter-spacing: 0.06em;
+}
+.footer-links a:hover { color: var(--accent); }
+
 .footer-logo {
   font-family: var(--display);
   font-size: 15px;
@@ -701,7 +720,7 @@ footer {
       <div class="logo-dot"></div>
       Indexicate
     </a>
-    <a href="geo-checker-v3.html" class="nav-cta">Free Check →</a>
+    <a href="geo-checker.html" class="nav-cta">Free Check →</a>
   </div>
 </nav>
 
@@ -723,7 +742,7 @@ footer {
     </p>
 
     <div class="hero-actions">
-      <a href="geo-checker-v3.html" class="btn-primary">
+      <a href="geo-checker.html" class="btn-primary">
         Check My Site Free →
       </a>
       <span class="btn-secondary">No signup. No credit card. 60 seconds.</span>
@@ -802,7 +821,7 @@ footer {
     </div>
 
     <div style="text-align:center; margin-top:40px;">
-      <a href="geo-checker-v3.html" class="btn-primary">Run Free GEO Check →</a>
+      <a href="geo-checker.html" class="btn-primary">Run Free GEO Check →</a>
     </div>
   </div>
 </section>
@@ -980,6 +999,12 @@ footer {
       <a href="index.html" class="footer-logo">Indexicate</a>
       <span class="footer-copy">© 2026 · GEO & AI Visibility Audits</span>
       <a href="mailto:hello@indexicate.com" class="footer-email">hello@indexicate.com</a>
+    </div>
+    <div class="footer-links">
+      <a href="about.html">About</a>
+      <a href="contact.html">Contact</a>
+      <a href="privacy.html">Privacy</a>
+      <a href="terms.html">Terms</a>
     </div>
   </div>
 </footer>

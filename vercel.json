@@ -1,4 +1,11 @@
 {
+  "redirects": [
+    {
+      "source": "/geo-checker-v3.html",
+      "destination": "/geo-checker.html",
+      "permanent": true
+    }
+  ],
   "headers": [
     {
       "source": "/(.*)",

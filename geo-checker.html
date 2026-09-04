@@ -8,7 +8,7 @@
 <meta property="og:type" content="website">
 <meta property="og:title" content="Free GEO Checker — Indexicate">
 <meta property="og:description" content="60 real technical checks for AI visibility — no signup, no simulated results.">
-<meta property="og:url" content="https://indexicate.com/geo-checker-v3.html">
+<meta property="og:url" content="https://indexicate.com/geo-checker.html">
 <meta property="og:image" content="https://indexicate.com/og-image.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
@@ -41,8 +41,10 @@
   ]
 }
 </script>
-<link rel="canonical" href="https://indexicate.com/geo-checker-v3.html">
+<link rel="canonical" href="https://indexicate.com/geo-checker.html">
 <meta name="description" content="Free GEO Checker — 60 real technical checks for AI visibility: crawler access, structured data, content structure, metadata and security headers.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;650;700&display=swap" rel="stylesheet">
 <style>
   :root{
     --ink:#14171c;
@@ -106,6 +108,11 @@
     max-width:58ch;
     margin-bottom:32px;
   }
+  .mode-tabs{display:flex;gap:4px;margin-bottom:14px;background:var(--ink-2);border:1px solid var(--line);border-radius:8px;padding:4px;width:fit-content;}
+  .mode-tab{background:transparent;border:none;color:var(--text-dim);font-family:var(--sans);font-weight:600;font-size:13px;padding:8px 16px;border-radius:6px;cursor:pointer;transition:background .15s ease,color .15s ease;}
+  .mode-tab.active{background:var(--pass);color:#0a1210;}
+  .mode-tab:hover:not(.active){color:var(--text);}
+  .mode-hint{font-family:var(--sans);font-size:13px;color:var(--text-dim);margin:0 0 20px;}
   form{display:flex;gap:10px;margin-bottom:8px;}
   input[type=text]{
     flex:1;
@@ -152,6 +159,24 @@
     margin-bottom:20px;
   }
   #status.error{color:var(--fail);}
+  .scan-steps{display:none;flex-direction:column;gap:2px;margin-bottom:28px;}
+  .scan-step{
+    display:flex;align-items:center;gap:11px;padding:6px 0;
+    font-family:var(--mono);font-size:12.5px;color:var(--text-dim);
+    transition:color .2s ease;
+  }
+  .scan-step.active{color:var(--text);}
+  .scan-step.done{color:var(--text-dim);}
+  .scan-step .dot{
+    width:14px;height:14px;border-radius:50%;flex-shrink:0;
+    border:1.5px solid var(--line);
+    display:flex;align-items:center;justify-content:center;
+    font-size:9px;font-weight:700;color:#0a1210;
+    transition:background .2s ease,border-color .2s ease;
+  }
+  .scan-step.active .dot{border-color:var(--pass);animation:stepPulse 1s ease-in-out infinite;}
+  .scan-step.done .dot{background:var(--pass);border-color:var(--pass);}
+  @keyframes stepPulse{0%,100%{opacity:1}50%{opacity:.35}}
   .report{display:none;}
   .report.visible{display:block;}
   .overall{
@@ -377,12 +402,16 @@
     files — technical foundation, content structure, metadata and security headers. Nothing here is simulated.
   </p>
 
+  <div class="mode-tabs" id="modeTabs">
+    <button type="button" class="mode-tab active" data-mode="single">Single Page</button>
+    <button type="button" class="mode-tab" data-mode="site">Whole Site</button>
+  </div>
+
   <form id="auditForm">
     <input type="text" id="urlInput" placeholder="yourdomain.com" autocomplete="off" />
     <button type="submit" id="submitBtn">Check</button>
   </form>
-
-  <button type="button" id="siteScanBtn" class="secondary-btn" style="margin-top:10px;">Scan whole site (from sitemap.xml) →</button>
+  <p class="mode-hint" id="modeHint">Checks the single URL you enter above.</p>
 
   <div class="disclaimer">
     <strong>What this does and doesn't do:</strong> this checks 60 technical
@@ -396,11 +425,13 @@
 
   <div id="status"></div>
 
+  <div class="scan-steps" id="scanSteps" style="display:none;"></div>
+
   <div class="site-scan" id="siteScan" style="display:none;"></div>
 
   <div class="report" id="report">
     <div class="overall">
-      <div class="overall-score" id="overallScore">0/20</div>
+      <div class="overall-score" id="overallScore">0/60</div>
       <div class="overall-label">signals present</div>
     </div>
     <div class="overall-bar"><div class="overall-bar-fill" id="overallBar" style="width:0%"></div></div>
@@ -417,7 +448,7 @@
   </div>
 
   <footer>
-    Built by <a href="https://indexicate.com">Indexicate</a> — AI Visibility Audits (GEO / AEO).
+    Built by <a href="index.html">Indexicate</a> — AI Visibility Audits (GEO / AEO). <a href="about.html">About</a> · <a href="privacy.html">Privacy</a> · <a href="terms.html">Terms</a>
   </footer>
 </div>
 
@@ -426,6 +457,7 @@ const form = document.getElementById('auditForm');
 const input = document.getElementById('urlInput');
 const btn = document.getElementById('submitBtn');
 const status = document.getElementById('status');
+const scanSteps = document.getElementById('scanSteps');
 const report = document.getElementById('report');
 const categoriesList = document.getElementById('categoriesList');
 const overallScore = document.getElementById('overallScore');
@@ -441,6 +473,30 @@ let lastReportHtml = '';
 let lastCheckedUrl = '';
 let lastSiteReportText = '';
 let lastSiteScanUrl = '';
+
+// ---------- mode switching (Single Page / Whole Site) ----------
+let mode = 'single';
+const modeTabs = document.querySelectorAll('.mode-tab');
+const modeHint = document.getElementById('modeHint');
+const MODE_HINTS = {
+  single: 'Checks the single URL you enter above.',
+  site: 'Reads sitemap.xml and checks every page it lists (capped at 10 pages).',
+};
+const MODE_BUTTON_LABELS = { single: 'Check', site: 'Scan Site →' };
+
+modeTabs.forEach((tabBtn) => {
+  tabBtn.addEventListener('click', () => {
+    mode = tabBtn.dataset.mode;
+    modeTabs.forEach((t) => t.classList.toggle('active', t === tabBtn));
+    modeHint.textContent = MODE_HINTS[mode];
+    btn.textContent = MODE_BUTTON_LABELS[mode];
+    status.textContent = '';
+    status.classList.remove('error');
+    report.classList.remove('visible');
+    siteScanDiv.style.display = 'none';
+    scanSteps.style.display = 'none';
+  });
+});
 
 const CATEGORY_META = {
   foundation: { name: 'Technical foundation' },
@@ -596,19 +652,71 @@ function escapeHtml(str){
   return String(str).replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));
 }
 
+// These steps mirror what /api/audit actually does, in order — this isn't a
+// fake loading animation, it's a paced readout of real phases of the check
+// (see api/audit.js). We hold the reveal until MIN_CHECK_DURATION_MS has
+// elapsed OR the real response arrives, whichever is LATER — so a fast site
+// still shows a legible, honest step-by-step trace instead of an instant
+// flash of results, and a slow site is never held back further than it
+// already legitimately takes.
+const SCAN_STEPS = [
+  'Connecting to your site',
+  'Fetching page content',
+  'Reading robots.txt, sitemap.xml & llms.txt',
+  'Testing AI crawler access — GPTBot, ClaudeBot, PerplexityBot, OAI-SearchBot…',
+  'Parsing structured data (JSON-LD)',
+  'Analyzing content structure & metadata',
+  'Checking security headers',
+  'Compiling your 60-point report',
+];
+const MIN_CHECK_DURATION_MS = 12000;
+
+function renderScanSteps(activeIndex) {
+  scanSteps.innerHTML = SCAN_STEPS.map((label, i) => {
+    const cls = i < activeIndex ? 'done' : (i === activeIndex ? 'active' : '');
+    const mark = i < activeIndex ? '✓' : '';
+    return `<div class="scan-step ${cls}"><span class="dot">${mark}</span>${escapeHtml(label)}</div>`;
+  }).join('');
+}
+
+function runStepSequence(totalMs) {
+  return new Promise((resolve) => {
+    scanSteps.style.display = 'flex';
+    renderScanSteps(0);
+    const perStep = totalMs / SCAN_STEPS.length;
+    let i = 0;
+    const tick = () => {
+      i++;
+      renderScanSteps(i);
+      if (i >= SCAN_STEPS.length) { resolve(); return; }
+      setTimeout(tick, perStep * (0.75 + Math.random() * 0.5));
+    };
+    setTimeout(tick, perStep * (0.75 + Math.random() * 0.5));
+  });
+}
+
 form.addEventListener('submit', async (e) => {
   e.preventDefault();
   const url = input.value.trim();
   if (!url) return;
+  if (mode === 'site') { await runSiteScan(url); return; }
+  await runSingleCheck(url);
+});
 
+async function runSingleCheck(url) {
   btn.disabled = true;
-  status.textContent = 'Running 20 checks — fetching page, robots.txt, sitemap, llms.txt...';
+  status.textContent = '';
   status.classList.remove('error');
   report.classList.remove('visible');
+  siteScanDiv.style.display = 'none';
 
   try {
-    const res = await fetch('/api/audit?url=' + encodeURIComponent(url), { cache: 'no-store' });
-    const data = await res.json();
+    // The real request fires immediately — nothing here is delayed. We just
+    // don't reveal the result until the step trace below has also finished,
+    // so a fast response doesn't flash by unreadably. See MIN_CHECK_DURATION_MS.
+    const fetchPromise = fetch('/api/audit?url=' + encodeURIComponent(url), { cache: 'no-store' }).then((r) => r.json());
+    const [data] = await Promise.all([fetchPromise, runStepSequence(MIN_CHECK_DURATION_MS)]);
+    scanSteps.style.display = 'none';
 
     if (data.fetchError) { status.textContent = data.fetchError; status.classList.add('error'); btn.disabled = false; return; }
     if (data.error) { status.textContent = data.error; status.classList.add('error'); btn.disabled = false; return; }
@@ -681,7 +789,7 @@ form.addEventListener('submit', async (e) => {
       `Overall score: ${totalPass}/${totalChecks}`,
       ...textLines,
       failedItems.length ? `\nPrioritize these:\n- ${[...failedItems].sort((a, b) => a.priority.localeCompare(b.priority)).map(i => `[${i.priority}] ${i.name}`).join('\n- ')}` : '',
-      `\nGenerated by indexicate.com/geo-checker-v3.html`,
+      `\nGenerated by indexicate.com/geo-checker.html`,
     ].join('\n');
 
     const priorityLabelsMap = { P0: 'Critical', P1: 'Important', P2: 'Minor' };
@@ -744,7 +852,7 @@ form.addEventListener('submit', async (e) => {
   </div>
   ${priorityHtml}
   ${catSectionsHtml}
-  <div class="rpt-footer">Generated by indexicate.com/geo-checker-v3.html</div>
+  <div class="rpt-footer">Generated by indexicate.com/geo-checker.html</div>
 </div>
 </body>
 </html>`;
@@ -752,12 +860,13 @@ form.addEventListener('submit', async (e) => {
     status.textContent = `Checked ${data.url}`;
     report.classList.add('visible');
   } catch (err) {
+    scanSteps.style.display = 'none';
     status.textContent = 'Something went wrong reaching the audit service. Try again in a moment.';
     status.classList.add('error');
   } finally {
     btn.disabled = false;
   }
-});
+}
 
 copyBtn.addEventListener('click', async () => {
   if (!lastReportText) return;
@@ -782,7 +891,6 @@ downloadBtn.addEventListener('click', () => {
 });
 
 // ---------- Scan whole site (from sitemap.xml) ----------
-const siteScanBtn = document.getElementById('siteScanBtn');
 const siteScanDiv = document.getElementById('siteScan');
 const MAX_SITE_PAGES = 10;
 
@@ -811,14 +919,13 @@ function computeScore(data) {
   return { totalPass, totalChecks, fails };
 }
 
-siteScanBtn.addEventListener('click', async () => {
-  const url = input.value.trim();
-  if (!url) { input.focus(); return; }
-
-  siteScanBtn.disabled = true;
+async function runSiteScan(url) {
+  btn.disabled = true;
+  scanSteps.style.display = 'none';
   siteScanDiv.style.display = 'block';
   siteScanDiv.innerHTML = '<div class="site-scan-status">Fetching sitemap.xml...</div>';
   report.classList.remove('visible');
+  status.textContent = '';
 
   try {
     const smRes = await fetch('/api/sitemap?url=' + encodeURIComponent(url), { cache: 'no-store' });
@@ -826,7 +933,7 @@ siteScanBtn.addEventListener('click', async () => {
 
     if (smData.error || !smData.urls || smData.urls.length === 0) {
       siteScanDiv.innerHTML = `<div class="site-scan-status" style="color:var(--fail)">${escapeHtml(smData.error || 'No URLs found in sitemap.')}</div>`;
-      siteScanBtn.disabled = false;
+      btn.disabled = false;
       return;
     }
 
@@ -924,7 +1031,7 @@ siteScanBtn.addEventListener('click', async () => {
       ...summaryTextLines,
       '',
       'Full detail: see the downloaded HTML report.',
-      'Generated by indexicate.com/geo-checker-v3.html',
+      'Generated by indexicate.com/geo-checker.html',
     ].join('\n');
     lastSiteScanUrl = url;
 
@@ -991,7 +1098,7 @@ siteScanBtn.addEventListener('click', async () => {
   </div>
   ${htmlPageSections}
   ${htmlCommonSection}
-  <div class="rpt-footer">Generated by indexicate.com/geo-checker-v3.html</div>
+  <div class="rpt-footer">Generated by indexicate.com/geo-checker.html</div>
 </div>
 </body>
 </html>`;
@@ -1019,9 +1126,9 @@ siteScanBtn.addEventListener('click', async () => {
   } catch (err) {
     siteScanDiv.innerHTML = '<div class="site-scan-status" style="color:var(--fail)">Something went wrong scanning the site. Try again in a moment.</div>';
   } finally {
-    siteScanBtn.disabled = false;
+    btn.disabled = false;
   }
-});
+}
 </script>
 </body>
 </html>

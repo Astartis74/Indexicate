@@ -51,6 +51,28 @@ function extractTag(html, regex) {
   return m ? m[1].trim() : null;
 }
 
+// Extracts a quoted attribute value where the value itself may contain an
+// apostrophe (e.g. meta description text like "the world's best..."). A
+// naive `["'](.*)["']` capture terminates at that apostrophe instead of the
+// real closing quote. This tries each candidate pattern with the SAME quote
+// character required on both ends (double quotes first, since that's the
+// overwhelming majority of real-world HTML), so the value is captured in
+// full regardless of what punctuation it contains.
+// `templates` is one or more regex-source strings using the token {{Q}}
+// everywhere a quote character belongs (both delimiters and the excluded
+// character in the value's negated class).
+function extractQuoted(html, templates) {
+  const list = Array.isArray(templates) ? templates : [templates];
+  for (const template of list) {
+    for (const q of ['"', "'"]) {
+      const src = template.split('{{Q}}').join(q);
+      const m = html.match(new RegExp(src, 'i'));
+      if (m) return m[1];
+    }
+  }
+  return null;
+}
+
 function countMatches(html, regex) {
   const m = html.match(regex);
   return m ? m.length : 0;
@@ -225,8 +247,8 @@ export default async function handler(req, res) {
   const notFoundIsProper4xx = notFoundStatus !== null && notFoundStatus >= 400 && notFoundStatus < 500;
 
   // ---------- meta robots, detailed ----------
-  const metaRobotsMatch = html.match(/<meta[^>]+name=["']robots["'][^>]+content=["']([\s\S]*?)["'][^>]*>/i);
-  const metaRobotsContent = metaRobotsMatch ? metaRobotsMatch[1].toLowerCase() : '';
+  const metaRobotsValue = extractQuoted(html, '<meta[^>]+name=["\']robots["\'][^>]+content={{Q}}([^{{Q}}]*){{Q}}[^>]*>');
+  const metaRobotsContent = metaRobotsValue !== null ? metaRobotsValue.toLowerCase() : '';
   const hasNoindex = metaRobotsContent.includes('noindex');
   const hasNofollow = metaRobotsContent.includes('nofollow');
   const hasNosnippet = metaRobotsContent.includes('nosnippet');
@@ -235,12 +257,11 @@ export default async function handler(req, res) {
 
   // ---------- title / meta description ----------
   const title = extractTag(html, /<title[^>]*>([\s\S]*?)<\/title>/i);
-  const metaDescMatch = html.match(
-    /<meta[^>]+name=["']description["'][^>]+content=["']([\s\S]*?)["'][^>]*>/i
-  ) || html.match(
-    /<meta[^>]+content=["']([\s\S]*?)["'][^>]+name=["']description["'][^>]*>/i
-  );
-  const metaDescription = metaDescMatch ? metaDescMatch[1].trim() : null;
+  const metaDescriptionRaw = extractQuoted(html, [
+    '<meta[^>]+name=["\']description["\'][^>]+content={{Q}}([^{{Q}}]*){{Q}}[^>]*>',
+    '<meta[^>]+content={{Q}}([^{{Q}}]*){{Q}}[^>]+name=["\']description["\'][^>]*>',
+  ]);
+  const metaDescription = metaDescriptionRaw !== null ? metaDescriptionRaw.trim() : null;
   const titleEqualsDescription = !!(title && metaDescription && title.trim().toLowerCase() === metaDescription.trim().toLowerCase());
 
   // ---------- H1 ----------
@@ -328,15 +349,15 @@ export default async function handler(req, res) {
   const hasRatingSignal = reviewItems.length > 0 || aggregateRatingItems.length > 0;
 
   // ---------- Open Graph, detailed ----------
-  const ogTitleMatch = html.match(/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']*)["']/i);
+  const ogTitleValue = extractQuoted(html, '<meta[^>]+property=["\']og:title["\'][^>]+content={{Q}}([^{{Q}}]*){{Q}}');
   const ogDescMatch = html.match(/<meta[^>]+property=["']og:description["']/i);
-  const ogImageMatch = html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']*)["']/i);
-  const ogUrlMatch = html.match(/<meta[^>]+property=["']og:url["'][^>]+content=["']([^"']*)["']/i);
-  const ogImageIsAbsolute = ogImageMatch ? /^https?:\/\//i.test(ogImageMatch[1]) : false;
-  const ogUrlMatchesCanonical = (ogUrlMatch && canonicalUrl) ? (ogUrlMatch[1].replace(/\/$/, '') === canonicalUrl.replace(/\/$/, '')) : null;
+  const ogImageValue = extractQuoted(html, '<meta[^>]+property=["\']og:image["\'][^>]+content={{Q}}([^{{Q}}]*){{Q}}');
+  const ogUrlValue = extractQuoted(html, '<meta[^>]+property=["\']og:url["\'][^>]+content={{Q}}([^{{Q}}]*){{Q}}');
+  const ogImageIsAbsolute = ogImageValue !== null ? /^https?:\/\//i.test(ogImageValue) : false;
+  const ogUrlMatchesCanonical = (ogUrlValue !== null && canonicalUrl) ? (ogUrlValue.replace(/\/$/, '') === canonicalUrl.replace(/\/$/, '')) : null;
 
   // ---------- Twitter Card ----------
-  const twitterCardMatch = html.match(/<meta[^>]+name=["']twitter:card["'][^>]+content=["']([^"']*)["']/i);
+  const twitterCardValue = extractQuoted(html, '<meta[^>]+name=["\']twitter:card["\'][^>]+content={{Q}}([^{{Q}}]*){{Q}}');
   const twitterImage = !!html.match(/<meta[^>]+name=["']twitter:image["']/i);
 
   // ---------- viewport / favicon ----------
@@ -426,11 +447,11 @@ export default async function handler(req, res) {
         productOfferSchema: { pass: productItems.length > 0 ? productHasOffer : true, note: productItems.length === 0 ? 'Only relevant for product/e-commerce pages.' : null },
         howToSchema: { pass: true, found: hasHowTo, note: hasHowTo ? null : 'Only relevant for tutorial/how-to pages.' },
         ratingSchema: { pass: true, found: hasRatingSignal, note: hasRatingSignal ? null : 'Only relevant for pages with reviews or ratings.' },
-        openGraphTitle: { pass: !!ogTitleMatch },
+        openGraphTitle: { pass: ogTitleValue !== null },
         openGraphDescription: { pass: !!ogDescMatch },
-        openGraphImage: { pass: !!ogImageMatch && ogImageIsAbsolute, hasTag: !!ogImageMatch, isAbsolute: ogImageIsAbsolute },
-        openGraphUrlMatchesCanonical: { pass: ogUrlMatchesCanonical !== false, note: (!ogUrlMatch || !canonicalUrl) ? 'og:url or canonical missing — cannot compare.' : null },
-        twitterCard: { pass: !!twitterCardMatch, value: twitterCardMatch ? twitterCardMatch[1] : null },
+        openGraphImage: { pass: ogImageValue !== null && ogImageIsAbsolute, hasTag: ogImageValue !== null, isAbsolute: ogImageIsAbsolute },
+        openGraphUrlMatchesCanonical: { pass: ogUrlMatchesCanonical !== false, note: (ogUrlValue === null || !canonicalUrl) ? 'og:url or canonical missing — cannot compare.' : null },
+        twitterCard: { pass: twitterCardValue !== null, value: twitterCardValue },
         twitterImage: { pass: twitterImage },
         viewport: { pass: hasViewport },
         favicon: { pass: faviconOk },

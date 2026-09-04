@@ -6,7 +6,7 @@ Indexicate offers a free technical GEO Checker that runs 60 real, server-side ch
 
 ## Services
 
-- [Free GEO Checker](https://indexicate.com/geo-checker-v3.html): Free technical AI-visibility check, no signup required.
+- [Free GEO Checker](https://indexicate.com/geo-checker.html): Free technical AI-visibility check, no signup required.
 - [Full GEO Audit](https://indexicate.com/audit-request.html): Paid audit including live AI query testing, Schema implementation, and a prioritized action plan.
 
 ## Contact
