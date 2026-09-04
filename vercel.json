@@ -4,6 +4,11 @@
       "source": "/geo-checker-v3.html",
       "destination": "/geo-checker.html",
       "permanent": true
+    },
+    {
+      "source": "/index.html",
+      "destination": "/",
+      "permanent": true
     }
   ],
   "headers": [
